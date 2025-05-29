@@ -16,6 +16,7 @@ import {
   ListItemAvatar,
   Avatar,
   Alert,
+  AlertTitle,
   TextField,
   FormControl,
   InputLabel,
@@ -29,8 +30,7 @@ import {
   IconButton,
   Chip
 } from '@mui/material';
-import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
-import { LocalizationProvider, TimePicker } from '@mui/x-date-pickers';
+// Date picker components removed due to compatibility issues
 import PersonIcon from '@mui/icons-material/Person';
 import DeleteIcon from '@mui/icons-material/Delete';
 import PlayArrowIcon from '@mui/icons-material/PlayArrow';
@@ -404,16 +404,7 @@ const QueueManagement = () => {
               ))}
             </Select>
           </FormControl>
-          <LocalizationProvider dateAdapter={AdapterDateFns}>
-            <TimePicker
-              label="Estimated Time Per Person (minutes)"
-              value={newQueueData.estimatedTimePerPerson}
-              onChange={(newValue) => {
-                setNewQueueData({ ...newQueueData, estimatedTimePerPerson: newValue });
-              }}
-              renderInput={(params) => <TextField {...params} fullWidth margin="normal" />}
-            />
-          </LocalizationProvider>
+          {/* Simple text field instead of TimePicker due to compatibility issues */}
           <TextField
             margin="normal"
             id="estimatedTimePerPerson"
