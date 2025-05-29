@@ -348,66 +348,58 @@ const QueueManagement = () => {
                                   {/* Pending Requests Section */}
                                   {pendingMembers.length > 0 && (
                                     <Box sx={{ mt: 2, mb: 3 }}>
-                                      <Typography variant="h6" gutterBottom sx={{ color: 'warning.main', fontWeight: 'bold' }}>
-                                        Pending Requests ({pendingMembers.length})
+                                      <Typography variant="h6" gutterBottom>
+                                        Pending Requests
                                       </Typography>
-                                      <Paper elevation={2} sx={{ bgcolor: '#fff9c4', border: '1px solid #ffc107' }}>
+                                      <Paper elevation={1} sx={{ bgcolor: '#fff9c4' }}>
                                         <List>
                                           {pendingMembers.map((member, index) => (
                                             <React.Fragment key={member._id}>
                                               {index > 0 && <Divider component="li" />}
                                               <ListItem
-                                                alignItems="flex-start"
-                                                sx={{ py: 2 }}
+                                                secondaryAction={
+                                                  <Box>
+                                                    <Button 
+                                                      color="success" 
+                                                      variant="contained" 
+                                                      size="small"
+                                                      sx={{ mr: 1 }}
+                                                      onClick={() => handleApproveRequest(queue._id, member.user._id)}
+                                                      disabled={processingAction}
+                                                    >
+                                                      Approve
+                                                    </Button>
+                                                    <Button 
+                                                      color="error" 
+                                                      variant="contained" 
+                                                      size="small"
+                                                      onClick={() => handleRejectRequest(queue._id, member.user._id)}
+                                                      disabled={processingAction}
+                                                    >
+                                                      Reject
+                                                    </Button>
+                                                  </Box>
+                                                }
                                               >
                                                 <ListItemAvatar>
-                                                  <Avatar sx={{ bgcolor: 'warning.main' }}>
+                                                  <Avatar>
                                                     <PersonIcon />
                                                   </Avatar>
                                                 </ListItemAvatar>
                                                 <ListItemText
-                                                  primary={
-                                                    <Typography variant="subtitle1" component="div" sx={{ fontWeight: 'bold' }}>
-                                                      {member.user.name}
-                                                    </Typography>
-                                                  }
+                                                  primary={`${member.user.name}`}
                                                   secondary={
                                                     <>
-                                                      <Box sx={{ mt: 1, mb: 2 }}>
-                                                        <Typography variant="body1" component="div" sx={{ mb: 1 }}>
-                                                          <strong>Project Interest:</strong>
-                                                        </Typography>
-                                                        <Paper elevation={0} sx={{ p: 1.5, bgcolor: 'background.paper', borderRadius: 1 }}>
-                                                          {member.notes || 'Not specified'}
-                                                        </Paper>
-                                                      </Box>
+                                                      <Typography component="span" variant="body2">
+                                                        Project: {member.notes || 'Not specified'}
+                                                      </Typography>
+                                                      <br />
                                                       <Typography component="span" variant="body2" color="text.secondary">
-                                                        Requested at {new Date(member.joinedAt).toLocaleTimeString()} on {new Date(member.joinedAt).toLocaleDateString()}
+                                                        Requested at {new Date(member.joinedAt).toLocaleTimeString()}
                                                       </Typography>
                                                     </>
                                                   }
                                                 />
-                                                <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1, ml: 2, minWidth: 120 }}>
-                                                  <Button 
-                                                    color="success" 
-                                                    variant="contained" 
-                                                    fullWidth
-                                                    onClick={() => handleApproveRequest(queue._id, member.user._id)}
-                                                    disabled={processingAction}
-                                                    sx={{ fontWeight: 'bold' }}
-                                                  >
-                                                    Approve
-                                                  </Button>
-                                                  <Button 
-                                                    color="error" 
-                                                    variant="outlined" 
-                                                    fullWidth
-                                                    onClick={() => handleRejectRequest(queue._id, member.user._id)}
-                                                    disabled={processingAction}
-                                                  >
-                                                    Reject
-                                                  </Button>
-                                                </Box>
                                               </ListItem>
                                             </React.Fragment>
                                           ))}

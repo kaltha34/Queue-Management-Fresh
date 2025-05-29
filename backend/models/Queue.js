@@ -38,9 +38,7 @@ const queueSchema = new mongoose.Schema({
       enum: ['pending', 'waiting', 'current', 'completed', 'cancelled', 'rejected'],
       default: 'pending'
     },
-    notes: String,
-    expertise: String,
-    reason: String
+    notes: String
   }],
   createdAt: {
     type: Date,
@@ -56,25 +54,55 @@ queueSchema.virtual('estimatedWaitTime').get(function() {
 
 // Method to add a user to the queue
 queueSchema.methods.addToQueue = function(userId, projectInterest) {
-  // Check if user is already in queue with waiting or current status
+  // Check if user is already in queue with pending, waiting or current status
   const existingMember = this.members.find(member => 
     member.user.toString() === userId && 
-    ['waiting', 'current'].includes(member.status)
+    ['pending', 'waiting', 'current'].includes(member.status)
   );
   
   if (existingMember) {
-    throw new Error('User is already in this queue');
+    throw new Error('User is already in this queue or has a pending request');
   }
   
   const nextNumber = this.currentNumber + 1;
   this.members.push({
     user: userId,
     queueNumber: nextNumber,
-    status: 'waiting',
+    status: 'pending', // Set to pending instead of waiting
     notes: projectInterest || '',
     joinedAt: new Date()
   });
   this.currentNumber = nextNumber;
+  return this.save();
+};
+
+// Method to approve a queue request (only for team admin)
+queueSchema.methods.approveRequest = function(userId) {
+  const memberIndex = this.members.findIndex(member => 
+    member.user.toString() === userId && 
+    member.status === 'pending'
+  );
+  
+  if (memberIndex === -1) {
+    throw new Error('No pending request found for this user');
+  }
+  
+  this.members[memberIndex].status = 'waiting';
+  return this.save();
+};
+
+// Method to reject a queue request (only for team admin)
+queueSchema.methods.rejectRequest = function(userId) {
+  const memberIndex = this.members.findIndex(member => 
+    member.user.toString() === userId && 
+    member.status === 'pending'
+  );
+  
+  if (memberIndex === -1) {
+    throw new Error('No pending request found for this user');
+  }
+  
+  this.members[memberIndex].status = 'rejected';
   return this.save();
 };
 

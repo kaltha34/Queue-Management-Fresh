@@ -74,6 +74,8 @@ const TeamDetails = () => {
     }
   }, [queues, team]);
 
+  const [isPending, setIsPending] = useState(false);
+
   useEffect(() => {
     if (activeQueue && user) {
       const position = getUserQueuePosition(activeQueue, user._id);
@@ -84,9 +86,17 @@ const TeamDetails = () => {
         ['waiting', 'current'].includes(member.status)
       );
       setIsInQueue(userInQueue);
+
+      // Check if user has a pending request
+      const hasPendingRequest = activeQueue.members.some(member => 
+        member.user._id === user._id && 
+        member.status === 'pending'
+      );
+      setIsPending(hasPendingRequest);
     } else {
       setUserPosition(null);
       setIsInQueue(false);
+      setIsPending(false);
     }
   }, [activeQueue, user, getUserQueuePosition]);
 
@@ -109,6 +119,8 @@ const TeamDetails = () => {
     setJoining(false);
     setOpenJoinDialog(false);
     setProjectInterest('');
+    // After joining, the status will be pending until approved
+    setIsPending(true);
   };
 
   const handleLeaveQueue = async () => {
@@ -278,16 +290,33 @@ const TeamDetails = () => {
                               {leaving ? <CircularProgress size={24} /> : 'Leave Queue'}
                             </Button>
                           </>
+                        ) : isPending ? (
+                          <>
+                            <Alert severity="warning" sx={{ mb: 2 }}>
+                              <AlertTitle>Request Pending</AlertTitle>
+                              Your request to join this queue is waiting for approval from the team mentor.
+                            </Alert>
+                            
+                            <Button 
+                              variant="outlined" 
+                              color="error" 
+                              fullWidth 
+                              onClick={handleLeaveQueue}
+                              disabled={leaving}
+                            >
+                              {leaving ? <CircularProgress size={24} /> : 'Cancel Request'}
+                            </Button>
+                          </>
                         ) : (
                           <Button
-                    variant="contained"
-                    color="primary"
-                    fullWidth
-                    onClick={handleJoinQueueClick}
-                    disabled={joining}
-                  >
-                    {joining ? <CircularProgress size={24} /> : 'Join Queue'}
-                  </Button>
+                            variant="contained"
+                            color="primary"
+                            fullWidth
+                            onClick={handleJoinQueueClick}
+                            disabled={joining}
+                          >
+                            {joining ? <CircularProgress size={24} /> : 'Join Queue'}
+                          </Button>
                         )
                       )}
                       
@@ -327,43 +356,106 @@ const TeamDetails = () => {
           </Grid>
         </Box>
         
-        {activeQueue && activeQueue.members.filter(m => m.status === 'waiting').length > 0 && (
+        {activeQueue && (activeQueue.members.filter(m => m.status === 'waiting').length > 0 || activeQueue.members.filter(m => m.status === 'pending').length > 0) && (
           <Box sx={{ mt: 4 }}>
             <Typography variant="h5" component="h2" gutterBottom>
               Current Queue
             </Typography>
-            <Paper elevation={2}>
-              <List>
-                {activeQueue.members
-                  .filter(m => m.status === 'waiting')
-                  .sort((a, b) => a.queueNumber - b.queueNumber)
-                  .map((member, index) => (
-                    <React.Fragment key={member._id}>
-                      {index > 0 && <Divider variant="inset" component="li" />}
-                      <ListItem>
-                        <ListItemAvatar>
-                          <Avatar>
-                            <PersonIcon />
-                          </Avatar>
-                        </ListItemAvatar>
-                        <ListItemText 
-                          primary={
-                            <Typography variant="body1">
-                              {member.user._id === user?._id ? 
-                                <strong>You</strong> : 
-                                member.user.name}
-                            </Typography>
-                          } 
-                          secondary={`Queue #${member.queueNumber} - Joined at ${new Date(member.joinedAt).toLocaleTimeString()}`} 
-                        />
-                        {index === 0 && (
-                          <Chip label="Next Up" color="success" />
-                        )}
-                      </ListItem>
-                    </React.Fragment>
-                  ))}
-              </List>
-            </Paper>
+            
+            {activeQueue.members.filter(m => m.status === 'pending').length > 0 && (
+              <>
+                <Typography variant="h6" component="h3" gutterBottom sx={{ mt: 2, color: 'text.secondary' }}>
+                  Pending Requests
+                </Typography>
+                <Paper elevation={2} sx={{ mb: 3, bgcolor: '#fff9c4' }}>
+                  <List>
+                    {activeQueue.members
+                      .filter(m => m.status === 'pending')
+                      .sort((a, b) => new Date(a.joinedAt) - new Date(b.joinedAt))
+                      .map((member, index) => (
+                        <React.Fragment key={member._id}>
+                          {index > 0 && <Divider variant="inset" component="li" />}
+                          <ListItem>
+                            <ListItemAvatar>
+                              <Avatar>
+                                <PersonIcon />
+                              </Avatar>
+                            </ListItemAvatar>
+                            <ListItemText 
+                              primary={
+                                <Typography variant="body1">
+                                  {member.user.name} {member.user._id === user?._id && <Chip size="small" label="You" color="primary" />}
+                                </Typography>
+                              }
+                              secondary={
+                                <>
+                                  <Typography variant="body2" component="span" color="text.secondary">
+                                    Requested at {new Date(member.joinedAt).toLocaleTimeString()}
+                                  </Typography>
+                                  <br />
+                                  <Typography variant="body2" component="span" color="text.secondary">
+                                    Project: {member.notes || 'Not specified'}
+                                  </Typography>
+                                  <br />
+                                  <Chip size="small" label="Pending Approval" color="warning" sx={{ mt: 0.5 }} />
+                                </>
+                              }
+                            />
+                          </ListItem>
+                        </React.Fragment>
+                      ))}
+                  </List>
+                </Paper>
+              </>
+            )}
+            
+            {activeQueue.members.filter(m => m.status === 'waiting').length > 0 && (
+              <>
+                <Typography variant="h6" component="h3" gutterBottom sx={{ mt: 2, color: 'text.secondary' }}>
+                  Waiting Students
+                </Typography>
+                <Paper elevation={2}>
+                  <List>
+                    {activeQueue.members
+                      .filter(m => m.status === 'waiting')
+                      .sort((a, b) => a.queueNumber - b.queueNumber)
+                      .map((member, index) => (
+                        <React.Fragment key={member._id}>
+                          {index > 0 && <Divider variant="inset" component="li" />}
+                          <ListItem>
+                            <ListItemAvatar>
+                              <Avatar>
+                                <PersonIcon />
+                              </Avatar>
+                            </ListItemAvatar>
+                            <ListItemText 
+                              primary={
+                                <Typography variant="body1">
+                                  #{member.queueNumber} - {member.user.name} {member.user._id === user?._id && <Chip size="small" label="You" color="primary" />}
+                                </Typography>
+                              }
+                              secondary={
+                                <>
+                                  <Typography variant="body2" component="span" color="text.secondary">
+                                    Joined at {new Date(member.joinedAt).toLocaleTimeString()}
+                                  </Typography>
+                                  <br />
+                                  <Typography variant="body2" component="span" color="text.secondary">
+                                    Est. wait: ~{activeQueue.estimatedTimePerPerson * (member.queueNumber - (activeQueue.currentNumber || 0))} min
+                                  </Typography>
+                                </>
+                              }
+                            />
+                            {index === 0 && (
+                              <Chip label="Next Up" color="success" />
+                            )}
+                          </ListItem>
+                        </React.Fragment>
+                      ))}
+                  </List>
+                </Paper>
+              </>
+            )}
           </Box>
         )}
       </Box>

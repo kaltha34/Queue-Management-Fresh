@@ -150,14 +150,14 @@ router.post('/:id/join', verifyToken, async (req, res) => {
       return res.status(400).json({ message: 'Queue is not active' });
     }
     
-    // Check if user is already in queue
+    // Check if user is already in queue or has a pending request
     const isInQueue = queue.members.some(member => 
       member.user.toString() === req.user.user.id && 
-      ['waiting', 'current'].includes(member.status)
+      ['pending', 'waiting', 'current'].includes(member.status)
     );
     
     if (isInQueue) {
-      return res.status(400).json({ message: 'You are already in this queue' });
+      return res.status(400).json({ message: 'You already have a pending or active request in this queue' });
     }
     
     // Add user to queue with project interest as notes
@@ -173,6 +173,80 @@ router.post('/:id/join', verifyToken, async (req, res) => {
     console.error(err.message);
     if (err.kind === 'ObjectId') {
       return res.status(404).json({ message: 'Queue not found' });
+    }
+    res.status(500).send('Server error');
+  }
+});
+
+// @route   PUT /api/queues/:id/approve/:userId
+// @desc    Approve a queue request (only for team admin)
+// @access  Private (Team Admin only)
+router.put('/:id/approve/:userId', verifyToken, async (req, res) => {
+  try {
+    const queue = await Queue.findById(req.params.id).populate('team');
+    
+    if (!queue) {
+      return res.status(404).json({ message: 'Queue not found' });
+    }
+    
+    // Check if user is the team admin
+    if (queue.team.mentor.toString() !== req.user.user.id) {
+      return res.status(403).json({ message: 'Only the team admin can approve requests' });
+    }
+    
+    // Approve the request
+    await queue.approveRequest(req.params.userId);
+    
+    // Get updated queue
+    const updatedQueue = await Queue.findById(req.params.id)
+      .populate('team', 'name description category location')
+      .populate('members.user', 'name email');
+    
+    res.json(updatedQueue);
+  } catch (err) {
+    console.error(err.message);
+    if (err.message === 'No pending request found for this user') {
+      return res.status(400).json({ message: err.message });
+    }
+    if (err.kind === 'ObjectId') {
+      return res.status(404).json({ message: 'Queue or user not found' });
+    }
+    res.status(500).send('Server error');
+  }
+});
+
+// @route   PUT /api/queues/:id/reject/:userId
+// @desc    Reject a queue request (only for team admin)
+// @access  Private (Team Admin only)
+router.put('/:id/reject/:userId', verifyToken, async (req, res) => {
+  try {
+    const queue = await Queue.findById(req.params.id).populate('team');
+    
+    if (!queue) {
+      return res.status(404).json({ message: 'Queue not found' });
+    }
+    
+    // Check if user is the team admin
+    if (queue.team.mentor.toString() !== req.user.user.id) {
+      return res.status(403).json({ message: 'Only the team admin can reject requests' });
+    }
+    
+    // Reject the request
+    await queue.rejectRequest(req.params.userId);
+    
+    // Get updated queue
+    const updatedQueue = await Queue.findById(req.params.id)
+      .populate('team', 'name description category location')
+      .populate('members.user', 'name email');
+    
+    res.json(updatedQueue);
+  } catch (err) {
+    console.error(err.message);
+    if (err.message === 'No pending request found for this user') {
+      return res.status(400).json({ message: err.message });
+    }
+    if (err.kind === 'ObjectId') {
+      return res.status(404).json({ message: 'Queue or user not found' });
     }
     res.status(500).send('Server error');
   }

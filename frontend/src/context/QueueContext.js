@@ -115,7 +115,7 @@ export const QueueProvider = ({ children }) => {
         socket.emit('joinQueue', { queueId });
       }
       
-      toast.success('Successfully joined the queue!');
+      toast.success('Request submitted! Waiting for admin approval.');
       return true;
     } catch (err) {
       setError(err.response?.data.message || 'Failed to join queue');
@@ -154,6 +154,64 @@ export const QueueProvider = ({ children }) => {
     } catch (err) {
       setError(err.response?.data.message || 'Failed to leave queue');
       toast.error(err.response?.data.message || 'Failed to leave queue');
+      return false;
+    }
+  };
+
+  // Approve a queue request (only for team admin)
+  const approveRequest = async (queueId, userId) => {
+    try {
+      const res = await axios.put(`/api/queues/${queueId}/approve/${userId}`);
+      
+      // Update the queues list
+      setQueues(queues.map(q => 
+        q._id === queueId ? res.data : q
+      ));
+      
+      // Update current queue if it's the one being updated
+      if (currentQueue && currentQueue._id === queueId) {
+        setCurrentQueue(res.data);
+      }
+      
+      // Emit socket event
+      if (socket) {
+        socket.emit('queueUpdate', { queueId });
+      }
+      
+      toast.success('Request approved!');
+      return true;
+    } catch (err) {
+      setError(err.response?.data.message || 'Failed to approve request');
+      toast.error(err.response?.data.message || 'Failed to approve request');
+      return false;
+    }
+  };
+
+  // Reject a queue request (only for team admin)
+  const rejectRequest = async (queueId, userId) => {
+    try {
+      const res = await axios.put(`/api/queues/${queueId}/reject/${userId}`);
+      
+      // Update the queues list
+      setQueues(queues.map(q => 
+        q._id === queueId ? res.data : q
+      ));
+      
+      // Update current queue if it's the one being updated
+      if (currentQueue && currentQueue._id === queueId) {
+        setCurrentQueue(res.data);
+      }
+      
+      // Emit socket event
+      if (socket) {
+        socket.emit('queueUpdate', { queueId });
+      }
+      
+      toast.success('Request rejected!');
+      return true;
+    } catch (err) {
+      setError(err.response?.data.message || 'Failed to reject request');
+      toast.error(err.response?.data.message || 'Failed to reject request');
       return false;
     }
   };
@@ -319,6 +377,8 @@ export const QueueProvider = ({ children }) => {
         createQueue,
         createTeam,
         updateQueueStatus,
+        approveRequest,
+        rejectRequest,
         getUserQueuePosition,
         setCurrentQueue
       }}
