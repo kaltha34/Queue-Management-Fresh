@@ -202,6 +202,23 @@ export const QueueProvider = ({ children }) => {
       return null;
     }
   };
+  
+  // Create a new team (mentor/admin only)
+  const createTeam = async (teamData) => {
+    try {
+      const res = await axios.post('/api/teams', teamData);
+      
+      // Add the new team to the list
+      setTeams([...teams, res.data]);
+      
+      toast.success('Team created successfully!');
+      return res.data;
+    } catch (err) {
+      setError(err.response?.data.message || 'Failed to create team');
+      toast.error(err.response?.data.message || 'Failed to create team');
+      return null;
+    }
+  };
 
   // Update queue status (mentor/admin only)
   const updateQueueStatus = async (queueId, status) => {
@@ -277,6 +294,7 @@ export const QueueProvider = ({ children }) => {
         leaveQueue,
         nextInQueue,
         createQueue,
+        createTeam,
         updateQueueStatus,
         getUserQueuePosition,
         setCurrentQueue

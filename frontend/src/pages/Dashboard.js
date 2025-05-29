@@ -14,22 +14,49 @@ import {
   Tabs,
   Tab,
   Alert,
-  Chip
+  Chip,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogContentText,
+  DialogTitle,
+  TextField,
+  FormControl,
+  InputLabel,
+  Select,
+  MenuItem,
+  FormHelperText
 } from '@mui/material';
 import AccessTimeIcon from '@mui/icons-material/AccessTime';
 import PeopleIcon from '@mui/icons-material/People';
 import MeetingRoomIcon from '@mui/icons-material/MeetingRoom';
+import AddIcon from '@mui/icons-material/Add';
 import QueueContext from '../context/QueueContext';
 import AuthContext from '../context/AuthContext';
 
 const Dashboard = () => {
-  const { queues, teams, loading, fetchQueues, fetchTeams, getUserQueuePosition, leaveQueue } = useContext(QueueContext);
+  const { queues, teams, loading, fetchQueues, fetchTeams, getUserQueuePosition, leaveQueue, createTeam } = useContext(QueueContext);
   const { user } = useContext(AuthContext);
   const navigate = useNavigate();
   
   const [tabValue, setTabValue] = useState(0);
   const [userQueues, setUserQueues] = useState([]);
   const [refreshing, setRefreshing] = useState(false);
+  const [openCreateTeamDialog, setOpenCreateTeamDialog] = useState(false);
+  const [newTeamData, setNewTeamData] = useState({
+    name: '',
+    description: '',
+    category: 'MERN',
+    location: '',
+    capacity: 10,
+    meetingDays: ['Monday'],
+    meetingTime: {
+      start: '09:00',
+      end: '10:00'
+    }
+  });
+  const [processingAction, setProcessingAction] = useState(false);
+  const [formErrors, setFormErrors] = useState({});
 
   useEffect(() => {
     fetchQueues();
@@ -65,6 +92,75 @@ const Dashboard = () => {
     await leaveQueue(queueId);
   };
 
+  const handleCreateTeamDialogOpen = () => {
+    setNewTeamData({
+      name: '',
+      description: '',
+      category: 'MERN',
+      location: '',
+      capacity: 10,
+      meetingDays: ['Monday'],
+      meetingTime: {
+        start: '09:00',
+        end: '10:00'
+      }
+    });
+    setFormErrors({});
+    setOpenCreateTeamDialog(true);
+  };
+
+  const handleCreateTeamDialogClose = () => {
+    setOpenCreateTeamDialog(false);
+  };
+
+  const handleTeamInputChange = (e) => {
+    const { name, value } = e.target;
+    setNewTeamData({
+      ...newTeamData,
+      [name]: value
+    });
+  };
+
+  const handleMeetingTimeChange = (e) => {
+    const { name, value } = e.target;
+    setNewTeamData({
+      ...newTeamData,
+      meetingTime: {
+        ...newTeamData.meetingTime,
+        [name]: value
+      }
+    });
+  };
+
+  const handleMeetingDaysChange = (e) => {
+    setNewTeamData({
+      ...newTeamData,
+      meetingDays: e.target.value
+    });
+  };
+
+  const validateTeamForm = () => {
+    const errors = {};
+    if (!newTeamData.name.trim()) errors.name = 'Team name is required';
+    if (!newTeamData.description.trim()) errors.description = 'Description is required';
+    if (!newTeamData.location.trim()) errors.location = 'Location is required';
+    if (!newTeamData.meetingTime.start) errors.startTime = 'Start time is required';
+    if (!newTeamData.meetingTime.end) errors.endTime = 'End time is required';
+    if (newTeamData.meetingDays.length === 0) errors.meetingDays = 'At least one meeting day is required';
+    
+    setFormErrors(errors);
+    return Object.keys(errors).length === 0;
+  };
+
+  const handleCreateTeam = async () => {
+    if (!validateTeamForm()) return;
+    
+    setProcessingAction(true);
+    await createTeam(newTeamData);
+    setProcessingAction(false);
+    setOpenCreateTeamDialog(false);
+  };
+
   const getCategoryColor = (category) => {
     switch (category) {
       case 'MERN':
@@ -93,13 +189,26 @@ const Dashboard = () => {
           <Typography variant="h4" component="h1" gutterBottom>
             Dashboard
           </Typography>
-          <Button 
-            variant="outlined" 
-            onClick={handleRefresh}
-            disabled={refreshing}
-          >
-            {refreshing ? <CircularProgress size={24} /> : 'Refresh'}
-          </Button>
+          <Box>
+            {user && (user.role === 'mentor' || user.role === 'admin') && (
+              <Button 
+                variant="contained" 
+                color="primary"
+                startIcon={<AddIcon />}
+                onClick={handleCreateTeamDialogOpen}
+                sx={{ mr: 2 }}
+              >
+                Create Team
+              </Button>
+            )}
+            <Button 
+              variant="outlined" 
+              onClick={handleRefresh}
+              disabled={refreshing}
+            >
+              {refreshing ? <CircularProgress size={24} /> : 'Refresh'}
+            </Button>
+          </Box>
         </Box>
 
         {userQueues.length > 0 && (
@@ -359,6 +468,159 @@ const Dashboard = () => {
           </Box>
         </Paper>
       </Box>
+      {/* Create Team Dialog */}
+      <Dialog open={openCreateTeamDialog} onClose={handleCreateTeamDialogClose} maxWidth="md" fullWidth>
+        <DialogTitle>Create New Team</DialogTitle>
+        <DialogContent>
+          <DialogContentText sx={{ mb: 2 }}>
+            Create a new team that you will mentor. Students will be able to join queues for this team.
+          </DialogContentText>
+          <Grid container spacing={2}>
+            <Grid item xs={12} sm={6}>
+              <TextField
+                margin="normal"
+                required
+                fullWidth
+                id="name"
+                label="Team Name"
+                name="name"
+                value={newTeamData.name}
+                onChange={handleTeamInputChange}
+                error={!!formErrors.name}
+                helperText={formErrors.name}
+              />
+            </Grid>
+            <Grid item xs={12} sm={6}>
+              <FormControl fullWidth margin="normal" required>
+                <InputLabel id="category-label">Category</InputLabel>
+                <Select
+                  labelId="category-label"
+                  id="category"
+                  name="category"
+                  value={newTeamData.category}
+                  label="Category"
+                  onChange={handleTeamInputChange}
+                >
+                  <MenuItem value="MERN">MERN</MenuItem>
+                  <MenuItem value="AI">AI</MenuItem>
+                  <MenuItem value="DevOps">DevOps</MenuItem>
+                  <MenuItem value="Other">Other</MenuItem>
+                </Select>
+              </FormControl>
+            </Grid>
+            <Grid item xs={12}>
+              <TextField
+                margin="normal"
+                required
+                fullWidth
+                id="description"
+                label="Description"
+                name="description"
+                multiline
+                rows={3}
+                value={newTeamData.description}
+                onChange={handleTeamInputChange}
+                error={!!formErrors.description}
+                helperText={formErrors.description}
+              />
+            </Grid>
+            <Grid item xs={12} sm={6}>
+              <TextField
+                margin="normal"
+                required
+                fullWidth
+                id="location"
+                label="Location"
+                name="location"
+                value={newTeamData.location}
+                onChange={handleTeamInputChange}
+                error={!!formErrors.location}
+                helperText={formErrors.location}
+              />
+            </Grid>
+            <Grid item xs={12} sm={6}>
+              <TextField
+                margin="normal"
+                fullWidth
+                id="capacity"
+                label="Capacity"
+                name="capacity"
+                type="number"
+                value={newTeamData.capacity}
+                onChange={handleTeamInputChange}
+                InputProps={{ inputProps: { min: 1, max: 50 } }}
+              />
+            </Grid>
+            <Grid item xs={12}>
+              <FormControl fullWidth margin="normal" required error={!!formErrors.meetingDays}>
+                <InputLabel id="meeting-days-label">Meeting Days</InputLabel>
+                <Select
+                  labelId="meeting-days-label"
+                  id="meetingDays"
+                  multiple
+                  value={newTeamData.meetingDays}
+                  label="Meeting Days"
+                  onChange={handleMeetingDaysChange}
+                  renderValue={(selected) => (
+                    <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
+                      {selected.map((value) => (
+                        <Chip key={value} label={value} />
+                      ))}
+                    </Box>
+                  )}
+                >
+                  {['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'].map((day) => (
+                    <MenuItem key={day} value={day}>{day}</MenuItem>
+                  ))}
+                </Select>
+                {formErrors.meetingDays && <FormHelperText>{formErrors.meetingDays}</FormHelperText>}
+              </FormControl>
+            </Grid>
+            <Grid item xs={12} sm={6}>
+              <TextField
+                margin="normal"
+                required
+                fullWidth
+                id="start"
+                label="Start Time"
+                name="start"
+                type="time"
+                value={newTeamData.meetingTime.start}
+                onChange={handleMeetingTimeChange}
+                InputLabelProps={{ shrink: true }}
+                error={!!formErrors.startTime}
+                helperText={formErrors.startTime}
+              />
+            </Grid>
+            <Grid item xs={12} sm={6}>
+              <TextField
+                margin="normal"
+                required
+                fullWidth
+                id="end"
+                label="End Time"
+                name="end"
+                type="time"
+                value={newTeamData.meetingTime.end}
+                onChange={handleMeetingTimeChange}
+                InputLabelProps={{ shrink: true }}
+                error={!!formErrors.endTime}
+                helperText={formErrors.endTime}
+              />
+            </Grid>
+          </Grid>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={handleCreateTeamDialogClose}>Cancel</Button>
+          <Button 
+            onClick={handleCreateTeam} 
+            variant="contained" 
+            disabled={processingAction}
+          >
+            {processingAction ? <CircularProgress size={24} /> : 'Create Team'}
+          </Button>
+        </DialogActions>
+      </Dialog>
     </Container>
   );
 };
