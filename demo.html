@@ -1,0 +1,654 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Queue Management System - Demo</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f5f5f5;
+        }
+        .navbar-brand {
+            font-weight: bold;
+            letter-spacing: 1px;
+        }
+        .card {
+            transition: transform 0.2s;
+            margin-bottom: 20px;
+        }
+        .card:hover {
+            transform: scale(1.02);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        }
+        .team-card {
+            border-left: 4px solid #1976d2;
+        }
+        .queue-card {
+            border-left: 4px solid #f50057;
+        }
+        .badge-mern {
+            background-color: #3f51b5;
+        }
+        .badge-ai {
+            background-color: #f44336;
+        }
+        .badge-devops {
+            background-color: #4caf50;
+        }
+        .progress {
+            height: 10px;
+            border-radius: 5px;
+        }
+        .avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background-color: #1976d2;
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="navbar navbar-expand-lg navbar-dark bg-primary mb-4">
+        <div class="container">
+            <a class="navbar-brand" href="#">QUEUE MASTER</a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav me-auto">
+                    <li class="nav-item">
+                        <a class="nav-link active" href="#">Home</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#">Dashboard</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#">Queue Management</a>
+                    </li>
+                </ul>
+                <div class="d-flex">
+                    <button class="btn btn-light me-2" id="loginBtn">Login</button>
+                    <button class="btn btn-outline-light" id="registerBtn">Register</button>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <div class="container my-4">
+        <div class="row mb-4">
+            <div class="col-12">
+                <h1 class="display-5 mb-3">Queue Management System</h1>
+                <p class="lead">Efficiently manage waiting queues for team meetings</p>
+            </div>
+        </div>
+
+        <!-- Teams Section -->
+        <h2 class="mb-3">Available Teams</h2>
+        <div class="row">
+            <!-- MERN Team -->
+            <div class="col-md-4">
+                <div class="card team-card h-100">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <h5 class="card-title">MERN Stack Team</h5>
+                            <span class="badge badge-mern text-white px-2 py-1 rounded">MERN</span>
+                        </div>
+                        <p class="card-text text-muted">Learn and work on projects using MongoDB, Express, React, and Node.js with our experienced mentors.</p>
+                        <hr>
+                        <p class="mb-1"><strong>Mentor:</strong> John Doe</p>
+                        <p class="mb-1"><strong>Location:</strong> IT Conference Room 1</p>
+                        <p class="mb-1"><strong>Meeting Days:</strong> Monday, Wednesday, Friday</p>
+                        
+                        <div class="alert alert-info mt-3 mb-2 py-2">
+                            <p class="mb-0"><strong>Active Queue:</strong> 5 waiting</p>
+                            <p class="mb-0"><small>Est. wait: ~75 min</small></p>
+                        </div>
+                        
+                        <button class="btn btn-primary w-100 mt-2 view-team" data-team="mern">View Details</button>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- AI Team -->
+            <div class="col-md-4">
+                <div class="card team-card h-100">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <h5 class="card-title">AI Research Team</h5>
+                            <span class="badge badge-ai text-white px-2 py-1 rounded">AI</span>
+                        </div>
+                        <p class="card-text text-muted">Explore machine learning, deep learning, and other AI technologies with cutting-edge research projects.</p>
+                        <hr>
+                        <p class="mb-1"><strong>Mentor:</strong> Jane Smith</p>
+                        <p class="mb-1"><strong>Location:</strong> IT Conference Room 2</p>
+                        <p class="mb-1"><strong>Meeting Days:</strong> Tuesday, Thursday</p>
+                        
+                        <div class="alert alert-info mt-3 mb-2 py-2">
+                            <p class="mb-0"><strong>Active Queue:</strong> 3 waiting</p>
+                            <p class="mb-0"><small>Est. wait: ~45 min</small></p>
+                        </div>
+                        
+                        <button class="btn btn-primary w-100 mt-2 view-team" data-team="ai">View Details</button>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- DevOps Team -->
+            <div class="col-md-4">
+                <div class="card team-card h-100">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <h5 class="card-title">DevOps Team</h5>
+                            <span class="badge badge-devops text-white px-2 py-1 rounded">DevOps</span>
+                        </div>
+                        <p class="card-text text-muted">Learn about CI/CD pipelines, containerization, and cloud infrastructure with hands-on projects.</p>
+                        <hr>
+                        <p class="mb-1"><strong>Mentor:</strong> Mike Johnson</p>
+                        <p class="mb-1"><strong>Location:</strong> IT Conference Room 3</p>
+                        <p class="mb-1"><strong>Meeting Days:</strong> Monday, Friday</p>
+                        
+                        <div class="alert alert-secondary mt-3 mb-2 py-2">
+                            <p class="mb-0">No active queue at the moment</p>
+                        </div>
+                        
+                        <button class="btn btn-primary w-100 mt-2 view-team" data-team="devops">View Details</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Team Details Section (Hidden by default) -->
+        <div id="teamDetails" class="mt-5" style="display: none;">
+            <div class="d-flex align-items-center mb-3">
+                <button id="backBtn" class="btn btn-outline-secondary me-3">Back</button>
+                <h2 id="teamName">Team Details</h2>
+            </div>
+            
+            <div class="row">
+                <div class="col-md-8">
+                    <div class="card mb-4">
+                        <div class="card-body">
+                            <div class="d-flex justify-content-between align-items-center mb-3">
+                                <h3 id="teamTitle">Team Name</h3>
+                                <span id="teamBadge" class="badge text-white px-2 py-1 rounded">Category</span>
+                            </div>
+                            <p id="teamDescription" class="mb-4">Team description will appear here.</p>
+                            
+                            <hr>
+                            
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <p><strong>Mentor:</strong> <span id="teamMentor">Mentor Name</span></p>
+                                    <p><strong>Location:</strong> <span id="teamLocation">Location</span></p>
+                                </div>
+                                <div class="col-md-6">
+                                    <p><strong>Meeting Days:</strong> <span id="teamDays">Days</span></p>
+                                    <p><strong>Meeting Time:</strong> <span id="teamTime">Time</span></p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="col-md-4">
+                    <div class="card queue-card">
+                        <div class="card-body">
+                            <h4 class="card-title mb-3">Queue Status</h4>
+                            
+                            <div id="queueActive">
+                                <p><strong>Waiting:</strong> <span id="queueWaiting">0</span> people</p>
+                                <p><strong>Est. Wait Time:</strong> ~<span id="queueWaitTime">0</span> min</p>
+                                
+                                <div id="userInQueue" style="display: none;">
+                                    <div class="alert alert-success mt-3 mb-3">
+                                        <h5 class="alert-heading">Your Position: #<span id="userPosition">0</span></h5>
+                                        <p class="mb-0">Estimated wait time: ~<span id="userWaitTime">0</span> minutes</p>
+                                    </div>
+                                    
+                                    <div class="mb-3">
+                                        <div class="progress">
+                                            <div id="userProgress" class="progress-bar bg-success" role="progressbar" style="width: 0%"></div>
+                                        </div>
+                                    </div>
+                                    
+                                    <button id="leaveQueueBtn" class="btn btn-outline-danger w-100">Leave Queue</button>
+                                </div>
+                                
+                                <div id="userNotInQueue">
+                                    <button id="joinQueueBtn" class="btn btn-primary w-100 mt-3">Join Queue</button>
+                                </div>
+                            </div>
+                            
+                            <div id="queueInactive" style="display: none;">
+                                <div class="alert alert-info">
+                                    No active queue for this team at the moment.
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div id="currentQueueSection" class="card mt-4">
+                        <div class="card-body">
+                            <h4 class="card-title mb-3">Current Queue</h4>
+                            <ul class="list-group" id="queueList">
+                                <!-- Queue members will be added here dynamically -->
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="bg-light py-4 mt-5">
+        <div class="container text-center">
+            <p>Queue Management System for Devora Platform</p>
+            <p class="text-muted">© 2025 Devora Platform</p>
+        </div>
+    </footer>
+
+    <!-- Login Modal -->
+    <div class="modal fade" id="loginModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Login</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="loginForm">
+                        <div class="mb-3">
+                            <label for="loginEmail" class="form-label">Email address</label>
+                            <input type="email" class="form-control" id="loginEmail" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="loginPassword" class="form-label">Password</label>
+                            <input type="password" class="form-control" id="loginPassword" required>
+                        </div>
+                        <button type="submit" class="btn btn-primary w-100">Login</button>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <p class="w-100 text-center">Don't have an account? <a href="#" id="showRegisterModal">Sign up</a></p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Register Modal -->
+    <div class="modal fade" id="registerModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Register</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="registerForm">
+                        <div class="mb-3">
+                            <label for="registerName" class="form-label">Full Name</label>
+                            <input type="text" class="form-control" id="registerName" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="registerEmail" class="form-label">Email address</label>
+                            <input type="email" class="form-control" id="registerEmail" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="registerPassword" class="form-label">Password</label>
+                            <input type="password" class="form-control" id="registerPassword" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="registerConfirmPassword" class="form-label">Confirm Password</label>
+                            <input type="password" class="form-control" id="registerConfirmPassword" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="registerRole" class="form-label">Role</label>
+                            <select class="form-select" id="registerRole">
+                                <option value="student">Student</option>
+                                <option value="mentor">Mentor</option>
+                            </select>
+                        </div>
+                        <button type="submit" class="btn btn-primary w-100">Register</button>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <p class="w-100 text-center">Already have an account? <a href="#" id="showLoginModal">Sign in</a></p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // Demo data
+        const teams = {
+            mern: {
+                name: "MERN Stack Team",
+                title: "MERN Stack Team",
+                category: "MERN",
+                badge: "badge-mern",
+                description: "Our MERN Stack team focuses on building full-stack web applications using MongoDB, Express.js, React, and Node.js. Join us to work on real-world projects and enhance your skills in modern web development. We cover everything from database design to frontend UI/UX implementation.",
+                mentor: "John Doe",
+                location: "IT Conference Room 1",
+                days: "Monday, Wednesday, Friday",
+                time: "10:00 AM - 12:00 PM",
+                hasQueue: true,
+                waiting: 5,
+                waitTime: 75,
+                members: [
+                    { name: "Alice Johnson", number: 1, time: "10:15 AM" },
+                    { name: "Bob Smith", number: 2, time: "10:30 AM" },
+                    { name: "Charlie Brown", number: 3, time: "10:45 AM" },
+                    { name: "Diana Prince", number: 4, time: "11:00 AM" },
+                    { name: "Edward Norton", number: 5, time: "11:15 AM" }
+                ]
+            },
+            ai: {
+                name: "AI Research Team",
+                title: "AI Research Team",
+                category: "AI",
+                badge: "badge-ai",
+                description: "The AI Research team explores cutting-edge technologies in machine learning, deep learning, and artificial intelligence. We work on projects involving computer vision, natural language processing, and predictive analytics. Join us to gain hands-on experience with TensorFlow, PyTorch, and other AI frameworks.",
+                mentor: "Jane Smith",
+                location: "IT Conference Room 2",
+                days: "Tuesday, Thursday",
+                time: "2:00 PM - 4:00 PM",
+                hasQueue: true,
+                waiting: 3,
+                waitTime: 45,
+                members: [
+                    { name: "Frank Castle", number: 1, time: "2:15 PM" },
+                    { name: "Grace Hopper", number: 2, time: "2:30 PM" },
+                    { name: "Harry Potter", number: 3, time: "2:45 PM" }
+                ]
+            },
+            devops: {
+                name: "DevOps Team",
+                title: "DevOps Team",
+                category: "DevOps",
+                badge: "badge-devops",
+                description: "Our DevOps team focuses on continuous integration, continuous deployment, and infrastructure as code. Learn about Docker, Kubernetes, AWS, and other cloud platforms. We help students understand the entire software development lifecycle and how to automate deployment processes.",
+                mentor: "Mike Johnson",
+                location: "IT Conference Room 3",
+                days: "Monday, Friday",
+                time: "1:00 PM - 3:00 PM",
+                hasQueue: false,
+                waiting: 0,
+                waitTime: 0,
+                members: []
+            }
+        };
+
+        // User state
+        let isLoggedIn = false;
+        let currentUser = null;
+        let userInQueue = null;
+
+        // DOM Elements
+        const teamDetailsSection = document.getElementById('teamDetails');
+        const teamsSection = document.querySelector('.row');
+        const backBtn = document.getElementById('backBtn');
+        const loginBtn = document.getElementById('loginBtn');
+        const registerBtn = document.getElementById('registerBtn');
+        const joinQueueBtn = document.getElementById('joinQueueBtn');
+        const leaveQueueBtn = document.getElementById('leaveQueueBtn');
+        const userInQueueSection = document.getElementById('userInQueue');
+        const userNotInQueueSection = document.getElementById('userNotInQueue');
+        const queueActiveSection = document.getElementById('queueActive');
+        const queueInactiveSection = document.getElementById('queueInactive');
+        const currentQueueSection = document.getElementById('currentQueueSection');
+
+        // View team buttons
+        const viewTeamBtns = document.querySelectorAll('.view-team');
+        viewTeamBtns.forEach(btn => {
+            btn.addEventListener('click', () => {
+                const teamId = btn.getAttribute('data-team');
+                showTeamDetails(teamId);
+            });
+        });
+
+        // Back button
+        backBtn.addEventListener('click', () => {
+            teamDetailsSection.style.display = 'none';
+            teamsSection.style.display = '';
+        });
+
+        // Show team details
+        function showTeamDetails(teamId) {
+            const team = teams[teamId];
+            
+            // Update team details
+            document.getElementById('teamName').textContent = team.name;
+            document.getElementById('teamTitle').textContent = team.title;
+            document.getElementById('teamBadge').textContent = team.category;
+            document.getElementById('teamBadge').className = `badge ${team.badge} text-white px-2 py-1 rounded`;
+            document.getElementById('teamDescription').textContent = team.description;
+            document.getElementById('teamMentor').textContent = team.mentor;
+            document.getElementById('teamLocation').textContent = team.location;
+            document.getElementById('teamDays').textContent = team.days;
+            document.getElementById('teamTime').textContent = team.time;
+            
+            // Update queue status
+            if (team.hasQueue) {
+                queueActiveSection.style.display = '';
+                queueInactiveSection.style.display = 'none';
+                currentQueueSection.style.display = '';
+                
+                document.getElementById('queueWaiting').textContent = team.waiting;
+                document.getElementById('queueWaitTime').textContent = team.waitTime;
+                
+                // Update queue list
+                const queueList = document.getElementById('queueList');
+                queueList.innerHTML = '';
+                
+                team.members.forEach((member, index) => {
+                    const li = document.createElement('li');
+                    li.className = 'list-group-item d-flex justify-content-between align-items-center';
+                    
+                    const memberDiv = document.createElement('div');
+                    memberDiv.className = 'd-flex align-items-center';
+                    
+                    const avatar = document.createElement('div');
+                    avatar.className = 'avatar me-3';
+                    avatar.textContent = member.name.charAt(0);
+                    
+                    const memberInfo = document.createElement('div');
+                    memberInfo.innerHTML = `
+                        <strong>#${member.number} - ${member.name}</strong>
+                        <div><small class="text-muted">Joined at ${member.time}</small></div>
+                    `;
+                    
+                    memberDiv.appendChild(avatar);
+                    memberDiv.appendChild(memberInfo);
+                    
+                    if (index === 0) {
+                        const badge = document.createElement('span');
+                        badge.className = 'badge bg-success';
+                        badge.textContent = 'Next Up';
+                        li.appendChild(memberDiv);
+                        li.appendChild(badge);
+                    } else {
+                        li.appendChild(memberDiv);
+                    }
+                    
+                    queueList.appendChild(li);
+                });
+                
+                // Check if user is in queue
+                if (isLoggedIn && userInQueue === teamId) {
+                    userInQueueSection.style.display = '';
+                    userNotInQueueSection.style.display = 'none';
+                    
+                    // Set user position (random for demo)
+                    const position = Math.floor(Math.random() * team.waiting) + 1;
+                    document.getElementById('userPosition').textContent = position;
+                    document.getElementById('userWaitTime').textContent = position * 15;
+                    
+                    // Set progress bar
+                    const progress = 100 - ((position / team.waiting) * 100);
+                    document.getElementById('userProgress').style.width = `${progress}%`;
+                } else {
+                    userInQueueSection.style.display = 'none';
+                    userNotInQueueSection.style.display = '';
+                }
+            } else {
+                queueActiveSection.style.display = 'none';
+                queueInactiveSection.style.display = '';
+                currentQueueSection.style.display = 'none';
+            }
+            
+            // Show team details section
+            teamDetailsSection.style.display = '';
+            teamsSection.style.display = 'none';
+        }
+
+        // Login/Register Modal
+        const loginModal = new bootstrap.Modal(document.getElementById('loginModal'));
+        const registerModal = new bootstrap.Modal(document.getElementById('registerModal'));
+        
+        loginBtn.addEventListener('click', () => {
+            loginModal.show();
+        });
+        
+        registerBtn.addEventListener('click', () => {
+            registerModal.show();
+        });
+        
+        document.getElementById('showRegisterModal').addEventListener('click', (e) => {
+            e.preventDefault();
+            loginModal.hide();
+            registerModal.show();
+        });
+        
+        document.getElementById('showLoginModal').addEventListener('click', (e) => {
+            e.preventDefault();
+            registerModal.hide();
+            loginModal.show();
+        });
+        
+        // Login Form
+        document.getElementById('loginForm').addEventListener('submit', (e) => {
+            e.preventDefault();
+            
+            // Simulate login
+            isLoggedIn = true;
+            currentUser = {
+                name: 'Demo User',
+                email: document.getElementById('loginEmail').value,
+                role: 'student'
+            };
+            
+            // Update UI
+            loginBtn.textContent = currentUser.name;
+            registerBtn.textContent = 'Logout';
+            registerBtn.addEventListener('click', logout);
+            
+            loginModal.hide();
+            alert('Successfully logged in!');
+        });
+        
+        // Register Form
+        document.getElementById('registerForm').addEventListener('submit', (e) => {
+            e.preventDefault();
+            
+            // Simulate registration
+            isLoggedIn = true;
+            currentUser = {
+                name: document.getElementById('registerName').value,
+                email: document.getElementById('registerEmail').value,
+                role: document.getElementById('registerRole').value
+            };
+            
+            // Update UI
+            loginBtn.textContent = currentUser.name;
+            registerBtn.textContent = 'Logout';
+            registerBtn.addEventListener('click', logout);
+            
+            registerModal.hide();
+            alert('Successfully registered!');
+        });
+        
+        // Logout function
+        function logout() {
+            isLoggedIn = false;
+            currentUser = null;
+            userInQueue = null;
+            
+            // Update UI
+            loginBtn.textContent = 'Login';
+            registerBtn.textContent = 'Register';
+            registerBtn.removeEventListener('click', logout);
+            
+            // If on team details page with user in queue, update UI
+            if (teamDetailsSection.style.display !== 'none') {
+                userInQueueSection.style.display = 'none';
+                userNotInQueueSection.style.display = '';
+            }
+            
+            alert('Successfully logged out!');
+        }
+        
+        // Join Queue
+        joinQueueBtn.addEventListener('click', () => {
+            if (!isLoggedIn) {
+                loginModal.show();
+                return;
+            }
+            
+            // Get current team
+            const teamName = document.getElementById('teamName').textContent;
+            let teamId;
+            
+            for (const id in teams) {
+                if (teams[id].name === teamName) {
+                    teamId = id;
+                    break;
+                }
+            }
+            
+            if (!teamId) return;
+            
+            // Simulate joining queue
+            userInQueue = teamId;
+            
+            // Update UI
+            userInQueueSection.style.display = '';
+            userNotInQueueSection.style.display = 'none';
+            
+            // Set user position (random for demo)
+            const team = teams[teamId];
+            const position = Math.floor(Math.random() * team.waiting) + 1;
+            document.getElementById('userPosition').textContent = position;
+            document.getElementById('userWaitTime').textContent = position * 15;
+            
+            // Set progress bar
+            const progress = 100 - ((position / team.waiting) * 100);
+            document.getElementById('userProgress').style.width = `${progress}%`;
+            
+            alert('Successfully joined the queue!');
+        });
+        
+        // Leave Queue
+        leaveQueueBtn.addEventListener('click', () => {
+            // Simulate leaving queue
+            userInQueue = null;
+            
+            // Update UI
+            userInQueueSection.style.display = 'none';
+            userNotInQueueSection.style.display = '';
+            
+            alert('Successfully left the queue!');
+        });
+    </script>
+</body>
+</html>

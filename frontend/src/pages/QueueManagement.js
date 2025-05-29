@@ -1,0 +1,443 @@
+import React, { useContext, useEffect, useState } from 'react';
+import {
+  Container,
+  Typography,
+  Box,
+  Grid,
+  Card,
+  CardContent,
+  Button,
+  Divider,
+  CircularProgress,
+  Paper,
+  List,
+  ListItem,
+  ListItemText,
+  ListItemAvatar,
+  Avatar,
+  Alert,
+  TextField,
+  FormControl,
+  InputLabel,
+  Select,
+  MenuItem,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogContentText,
+  DialogTitle,
+  IconButton,
+  Chip
+} from '@mui/material';
+import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
+import { LocalizationProvider, TimePicker } from '@mui/x-date-pickers';
+import PersonIcon from '@mui/icons-material/Person';
+import DeleteIcon from '@mui/icons-material/Delete';
+import PlayArrowIcon from '@mui/icons-material/PlayArrow';
+import PauseIcon from '@mui/icons-material/Pause';
+import StopIcon from '@mui/icons-material/Stop';
+import AddIcon from '@mui/icons-material/Add';
+import QueueContext from '../context/QueueContext';
+import AuthContext from '../context/AuthContext';
+
+const QueueManagement = () => {
+  const { teams, queues, loading, fetchTeams, fetchQueues, nextInQueue, createQueue, updateQueueStatus } = useContext(QueueContext);
+  const { user } = useContext(AuthContext);
+  
+  const [mentorTeams, setMentorTeams] = useState([]);
+  const [mentorQueues, setMentorQueues] = useState([]);
+  const [selectedTeam, setSelectedTeam] = useState(null);
+  const [openCreateDialog, setOpenCreateDialog] = useState(false);
+  const [newQueueData, setNewQueueData] = useState({
+    teamId: '',
+    date: new Date(),
+    estimatedTimePerPerson: 15
+  });
+  const [processingAction, setProcessingAction] = useState(false);
+
+  useEffect(() => {
+    fetchTeams();
+    fetchQueues();
+    // eslint-disable-next-line
+  }, []);
+
+  useEffect(() => {
+    if (teams.length > 0 && user) {
+      // Find teams where the user is the mentor
+      const userTeams = teams.filter(team => team.mentor._id === user._id);
+      setMentorTeams(userTeams);
+      
+      if (userTeams.length > 0 && !selectedTeam) {
+        setSelectedTeam(userTeams[0]);
+      }
+    }
+  }, [teams, user, selectedTeam]);
+
+  useEffect(() => {
+    if (queues.length > 0 && selectedTeam) {
+      // Find queues for the selected team
+      const teamQueues = queues.filter(queue => queue.team._id === selectedTeam._id);
+      setMentorQueues(teamQueues);
+    } else {
+      setMentorQueues([]);
+    }
+  }, [queues, selectedTeam]);
+
+  const handleTeamChange = (event) => {
+    const teamId = event.target.value;
+    const team = mentorTeams.find(t => t._id === teamId);
+    setSelectedTeam(team);
+    setNewQueueData({ ...newQueueData, teamId });
+  };
+
+  const handleCreateDialogOpen = () => {
+    setNewQueueData({
+      teamId: selectedTeam ? selectedTeam._id : '',
+      date: new Date(),
+      estimatedTimePerPerson: 15
+    });
+    setOpenCreateDialog(true);
+  };
+
+  const handleCreateDialogClose = () => {
+    setOpenCreateDialog(false);
+  };
+
+  const handleCreateQueue = async () => {
+    setProcessingAction(true);
+    await createQueue(newQueueData);
+    setProcessingAction(false);
+    setOpenCreateDialog(false);
+  };
+
+  const handleNextInQueue = async (queueId) => {
+    setProcessingAction(true);
+    await nextInQueue(queueId);
+    setProcessingAction(false);
+  };
+
+  const handleQueueStatusChange = async (queueId, status) => {
+    setProcessingAction(true);
+    await updateQueueStatus(queueId, status);
+    setProcessingAction(false);
+  };
+
+  const getQueueStatusColor = (status) => {
+    switch (status) {
+      case 'active':
+        return 'success';
+      case 'paused':
+        return 'warning';
+      case 'closed':
+        return 'error';
+      default:
+        return 'default';
+    }
+  };
+
+  if (loading && !processingAction) {
+    return (
+      <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '50vh' }}>
+        <CircularProgress />
+      </Box>
+    );
+  }
+
+  return (
+    <Container maxWidth="lg">
+      <Box sx={{ my: 4 }}>
+        <Typography variant="h4" component="h1" gutterBottom>
+          Queue Management
+        </Typography>
+        
+        {mentorTeams.length === 0 ? (
+          <Alert severity="info" sx={{ mt: 2 }}>
+            You don't have any teams assigned to you. Please contact an administrator to create a team.
+          </Alert>
+        ) : (
+          <>
+            <Paper sx={{ p: 3, mb: 4 }}>
+              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
+                <FormControl sx={{ minWidth: 200 }}>
+                  <InputLabel id="team-select-label">Select Team</InputLabel>
+                  <Select
+                    labelId="team-select-label"
+                    id="team-select"
+                    value={selectedTeam ? selectedTeam._id : ''}
+                    label="Select Team"
+                    onChange={handleTeamChange}
+                  >
+                    {mentorTeams.map(team => (
+                      <MenuItem key={team._id} value={team._id}>{team.name}</MenuItem>
+                    ))}
+                  </Select>
+                </FormControl>
+                
+                <Button 
+                  variant="contained" 
+                  startIcon={<AddIcon />}
+                  onClick={handleCreateDialogOpen}
+                  disabled={!selectedTeam}
+                >
+                  Create New Queue
+                </Button>
+              </Box>
+              
+              {selectedTeam && (
+                <Box>
+                  <Typography variant="h6" gutterBottom>
+                    {selectedTeam.name} - {selectedTeam.category}
+                  </Typography>
+                  <Typography variant="body1" paragraph>
+                    {selectedTeam.description}
+                  </Typography>
+                  <Divider sx={{ my: 2 }} />
+                  <Grid container spacing={2}>
+                    <Grid item xs={12} sm={6}>
+                      <Typography variant="body1">
+                        <strong>Location:</strong> {selectedTeam.location}
+                      </Typography>
+                    </Grid>
+                    <Grid item xs={12} sm={6}>
+                      <Typography variant="body1">
+                        <strong>Meeting Days:</strong> {selectedTeam.meetingDays.join(', ')}
+                      </Typography>
+                    </Grid>
+                    <Grid item xs={12} sm={6}>
+                      <Typography variant="body1">
+                        <strong>Meeting Time:</strong> {selectedTeam.meetingTime.start} - {selectedTeam.meetingTime.end}
+                      </Typography>
+                    </Grid>
+                    <Grid item xs={12} sm={6}>
+                      <Typography variant="body1">
+                        <strong>Capacity:</strong> {selectedTeam.capacity} students
+                      </Typography>
+                    </Grid>
+                  </Grid>
+                </Box>
+              )}
+            </Paper>
+            
+            {selectedTeam && (
+              <>
+                <Typography variant="h5" component="h2" gutterBottom>
+                  Queues for {selectedTeam.name}
+                </Typography>
+                
+                {mentorQueues.length === 0 ? (
+                  <Alert severity="info">
+                    No queues found for this team. Create a new queue to get started.
+                  </Alert>
+                ) : (
+                  <Grid container spacing={3}>
+                    {mentorQueues.map(queue => {
+                      const waitingMembers = queue.members.filter(m => m.status === 'waiting');
+                      const currentMember = queue.members.find(m => m.status === 'current');
+                      
+                      return (
+                        <Grid item xs={12} key={queue._id}>
+                          <Card>
+                            <CardContent>
+                              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+                                <Typography variant="h6">
+                                  Queue for {new Date(queue.date).toLocaleDateString()}
+                                </Typography>
+                                <Chip 
+                                  label={queue.status.toUpperCase()} 
+                                  color={getQueueStatusColor(queue.status)} 
+                                />
+                              </Box>
+                              
+                              <Grid container spacing={2}>
+                                <Grid item xs={12} md={4}>
+                                  <Typography variant="body1">
+                                    <strong>Created:</strong> {new Date(queue.createdAt).toLocaleString()}
+                                  </Typography>
+                                  <Typography variant="body1">
+                                    <strong>Est. Time Per Person:</strong> {queue.estimatedTimePerPerson} min
+                                  </Typography>
+                                  <Typography variant="body1">
+                                    <strong>Waiting:</strong> {waitingMembers.length} people
+                                  </Typography>
+                                  
+                                  <Box sx={{ mt: 2, display: 'flex', gap: 1 }}>
+                                    {queue.status === 'active' ? (
+                                      <Button 
+                                        variant="outlined" 
+                                        color="warning" 
+                                        startIcon={<PauseIcon />}
+                                        onClick={() => handleQueueStatusChange(queue._id, 'paused')}
+                                        disabled={processingAction}
+                                      >
+                                        Pause
+                                      </Button>
+                                    ) : queue.status === 'paused' ? (
+                                      <Button 
+                                        variant="outlined" 
+                                        color="success" 
+                                        startIcon={<PlayArrowIcon />}
+                                        onClick={() => handleQueueStatusChange(queue._id, 'active')}
+                                        disabled={processingAction}
+                                      >
+                                        Resume
+                                      </Button>
+                                    ) : null}
+                                    
+                                    {queue.status !== 'closed' && (
+                                      <Button 
+                                        variant="outlined" 
+                                        color="error" 
+                                        startIcon={<StopIcon />}
+                                        onClick={() => handleQueueStatusChange(queue._id, 'closed')}
+                                        disabled={processingAction}
+                                      >
+                                        Close
+                                      </Button>
+                                    )}
+                                  </Box>
+                                </Grid>
+                                
+                                <Grid item xs={12} md={8}>
+                                  {currentMember && (
+                                    <Box sx={{ mb: 2 }}>
+                                      <Alert severity="success">
+                                        <AlertTitle>Current Student</AlertTitle>
+                                        <Typography variant="body1">
+                                          <strong>{currentMember.user.name}</strong> (Queue #{currentMember.queueNumber})
+                                        </Typography>
+                                      </Alert>
+                                    </Box>
+                                  )}
+                                  
+                                  {waitingMembers.length > 0 ? (
+                                    <Box>
+                                      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
+                                        <Typography variant="subtitle1">
+                                          Waiting List
+                                        </Typography>
+                                        <Button 
+                                          variant="contained" 
+                                          color="primary"
+                                          onClick={() => handleNextInQueue(queue._id)}
+                                          disabled={processingAction || queue.status !== 'active'}
+                                        >
+                                          Next Student
+                                        </Button>
+                                      </Box>
+                                      <Paper variant="outlined">
+                                        <List dense>
+                                          {waitingMembers
+                                            .sort((a, b) => a.queueNumber - b.queueNumber)
+                                            .slice(0, 5)
+                                            .map((member, index) => (
+                                              <React.Fragment key={member._id}>
+                                                {index > 0 && <Divider component="li" />}
+                                                <ListItem
+                                                  secondaryAction={
+                                                    <IconButton edge="end" aria-label="delete">
+                                                      <DeleteIcon />
+                                                    </IconButton>
+                                                  }
+                                                >
+                                                  <ListItemAvatar>
+                                                    <Avatar>
+                                                      <PersonIcon />
+                                                    </Avatar>
+                                                  </ListItemAvatar>
+                                                  <ListItemText
+                                                    primary={`#${member.queueNumber} - ${member.user.name}`}
+                                                    secondary={`Joined at ${new Date(member.joinedAt).toLocaleTimeString()}`}
+                                                  />
+                                                </ListItem>
+                                              </React.Fragment>
+                                            ))}
+                                          
+                                          {waitingMembers.length > 5 && (
+                                            <ListItem>
+                                              <ListItemText
+                                                primary={`+ ${waitingMembers.length - 5} more students waiting`}
+                                                sx={{ textAlign: 'center' }}
+                                              />
+                                            </ListItem>
+                                          )}
+                                        </List>
+                                      </Paper>
+                                    </Box>
+                                  ) : (
+                                    <Alert severity="info">
+                                      No students waiting in this queue.
+                                    </Alert>
+                                  )}
+                                </Grid>
+                              </Grid>
+                            </CardContent>
+                          </Card>
+                        </Grid>
+                      );
+                    })}
+                  </Grid>
+                )}
+              </>
+            )}
+          </>
+        )}
+      </Box>
+      
+      {/* Create Queue Dialog */}
+      <Dialog open={openCreateDialog} onClose={handleCreateDialogClose}>
+        <DialogTitle>Create New Queue</DialogTitle>
+        <DialogContent>
+          <DialogContentText>
+            Create a new queue for students to join. This will allow students to line up for meetings with your team.
+          </DialogContentText>
+          <FormControl fullWidth margin="normal">
+            <InputLabel id="create-team-select-label">Team</InputLabel>
+            <Select
+              labelId="create-team-select-label"
+              id="create-team-select"
+              value={newQueueData.teamId}
+              label="Team"
+              onChange={(e) => setNewQueueData({ ...newQueueData, teamId: e.target.value })}
+            >
+              {mentorTeams.map(team => (
+                <MenuItem key={team._id} value={team._id}>{team.name}</MenuItem>
+              ))}
+            </Select>
+          </FormControl>
+          <LocalizationProvider dateAdapter={AdapterDateFns}>
+            <TimePicker
+              label="Estimated Time Per Person (minutes)"
+              value={newQueueData.estimatedTimePerPerson}
+              onChange={(newValue) => {
+                setNewQueueData({ ...newQueueData, estimatedTimePerPerson: newValue });
+              }}
+              renderInput={(params) => <TextField {...params} fullWidth margin="normal" />}
+            />
+          </LocalizationProvider>
+          <TextField
+            margin="normal"
+            id="estimatedTimePerPerson"
+            label="Estimated Time Per Person (minutes)"
+            type="number"
+            fullWidth
+            value={newQueueData.estimatedTimePerPerson}
+            onChange={(e) => setNewQueueData({ ...newQueueData, estimatedTimePerPerson: parseInt(e.target.value) || 15 })}
+            InputProps={{ inputProps: { min: 1, max: 60 } }}
+          />
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={handleCreateDialogClose}>Cancel</Button>
+          <Button 
+            onClick={handleCreateQueue} 
+            variant="contained"
+            disabled={!newQueueData.teamId || processingAction}
+          >
+            {processingAction ? <CircularProgress size={24} /> : 'Create Queue'}
+          </Button>
+        </DialogActions>
+      </Dialog>
+    </Container>
+  );
+};
+
+export default QueueManagement;
