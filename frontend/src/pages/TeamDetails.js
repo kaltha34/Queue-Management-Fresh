@@ -18,8 +18,16 @@ import {
   ListItemAvatar,
   Avatar,
   Alert,
-  AlertTitle
+  AlertTitle,
+  TextField,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogContentText,
+  DialogTitle,
+  Tooltip
 } from '@mui/material';
+import { toast } from 'react-toastify';
 import AccessTimeIcon from '@mui/icons-material/AccessTime';
 import PeopleIcon from '@mui/icons-material/People';
 import MeetingRoomIcon from '@mui/icons-material/MeetingRoom';
@@ -30,7 +38,7 @@ import AuthContext from '../context/AuthContext';
 const TeamDetails = () => {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { teams, queues, loading, fetchTeams, fetchQueues, joinQueue, leaveQueue, getUserQueuePosition } = useContext(QueueContext);
+  const { teams, queues, loading, fetchTeams, fetchQueues, joinQueue, leaveQueue, getUserQueuePosition, createQueue } = useContext(QueueContext);
   const { user, isAuthenticated } = useContext(AuthContext);
   
   const [team, setTeam] = useState(null);
@@ -39,6 +47,9 @@ const TeamDetails = () => {
   const [isInQueue, setIsInQueue] = useState(false);
   const [joining, setJoining] = useState(false);
   const [leaving, setLeaving] = useState(false);
+  const [openJoinDialog, setOpenJoinDialog] = useState(false);
+  const [projectInterest, setProjectInterest] = useState('');
+  const [creatingQueue, setCreatingQueue] = useState(false);
 
   useEffect(() => {
     fetchTeams();
@@ -79,21 +90,54 @@ const TeamDetails = () => {
     }
   }, [activeQueue, user, getUserQueuePosition]);
 
-  const handleJoinQueue = async () => {
+  const handleJoinQueueClick = () => {
     if (!isAuthenticated) {
       navigate('/login');
       return;
     }
     
+    setOpenJoinDialog(true);
+  };
+
+  const handleJoinDialogClose = () => {
+    setOpenJoinDialog(false);
+  };
+
+  const handleJoinQueue = async () => {
     setJoining(true);
-    await joinQueue(activeQueue._id);
+    await joinQueue(activeQueue._id, projectInterest);
     setJoining(false);
+    setOpenJoinDialog(false);
+    setProjectInterest('');
   };
 
   const handleLeaveQueue = async () => {
     setLeaving(true);
     await leaveQueue(activeQueue._id);
     setLeaving(false);
+  };
+
+  const handleCreateQueue = async () => {
+    if (!team) return;
+    
+    setCreatingQueue(true);
+    const queueData = {
+      teamId: team._id,
+      date: new Date(),
+      estimatedTimePerPerson: 15
+    };
+    
+    try {
+      await createQueue(queueData);
+      toast.success('Queue created successfully!');
+      // Refresh queues to show the newly created queue
+      await fetchQueues();
+    } catch (err) {
+      console.error('Error creating queue:', err);
+      toast.error('Failed to create queue');
+    } finally {
+      setCreatingQueue(false);
+    }
   };
 
   const getCategoryColor = (category) => {
@@ -235,15 +279,15 @@ const TeamDetails = () => {
                             </Button>
                           </>
                         ) : (
-                          <Button 
-                            variant="contained" 
-                            color="primary" 
-                            fullWidth 
-                            onClick={handleJoinQueue}
-                            disabled={joining}
-                          >
-                            {joining ? <CircularProgress size={24} /> : 'Join Queue'}
-                          </Button>
+                          <Button
+                    variant="contained"
+                    color="primary"
+                    fullWidth
+                    onClick={handleJoinQueueClick}
+                    disabled={joining}
+                  >
+                    {joining ? <CircularProgress size={24} /> : 'Join Queue'}
+                  </Button>
                         )
                       )}
                       
@@ -259,9 +303,23 @@ const TeamDetails = () => {
                       )}
                     </>
                   ) : (
-                    <Alert severity="info">
-                      No active queue for this team at the moment.
-                    </Alert>
+                    <>
+                      <Alert severity="info" sx={{ mb: 2 }}>
+                        No active queue for this team at the moment.
+                      </Alert>
+                      
+                      {user && (user.role === 'admin' || (team && team.mentor._id === user._id)) && (
+                        <Button
+                          variant="contained"
+                          color="primary"
+                          fullWidth
+                          onClick={handleCreateQueue}
+                          disabled={creatingQueue}
+                        >
+                          {creatingQueue ? <CircularProgress size={24} /> : 'Create Queue Now'}
+                        </Button>
+                      )}
+                    </>
                   )}
                 </CardContent>
               </Card>
@@ -309,6 +367,37 @@ const TeamDetails = () => {
           </Box>
         )}
       </Box>
+      {/* Join Queue Dialog */}
+      <Dialog open={openJoinDialog} onClose={handleJoinDialogClose}>
+        <DialogTitle>Join Queue</DialogTitle>
+        <DialogContent>
+          <DialogContentText>
+            Please specify which project you're interested in discussing with the mentor.
+          </DialogContentText>
+          <TextField
+            autoFocus
+            margin="dense"
+            id="projectInterest"
+            label="Project Interest"
+            type="text"
+            fullWidth
+            variant="outlined"
+            value={projectInterest}
+            onChange={(e) => setProjectInterest(e.target.value)}
+            placeholder="e.g., MERN Stack Project, AI Model Training, DevOps Pipeline"
+          />
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={handleJoinDialogClose}>Cancel</Button>
+          <Button 
+            onClick={handleJoinQueue} 
+            variant="contained" 
+            disabled={joining}
+          >
+            {joining ? <CircularProgress size={24} /> : 'Join Queue'}
+          </Button>
+        </DialogActions>
+      </Dialog>
     </Container>
   );
 };

@@ -35,10 +35,12 @@ const queueSchema = new mongoose.Schema({
     },
     status: {
       type: String,
-      enum: ['waiting', 'current', 'completed', 'cancelled'],
-      default: 'waiting'
+      enum: ['pending', 'waiting', 'current', 'completed', 'cancelled', 'rejected'],
+      default: 'pending'
     },
-    notes: String
+    notes: String,
+    expertise: String,
+    reason: String
   }],
   createdAt: {
     type: Date,
@@ -53,12 +55,24 @@ queueSchema.virtual('estimatedWaitTime').get(function() {
 });
 
 // Method to add a user to the queue
-queueSchema.methods.addToQueue = function(userId) {
+queueSchema.methods.addToQueue = function(userId, projectInterest) {
+  // Check if user is already in queue with waiting or current status
+  const existingMember = this.members.find(member => 
+    member.user.toString() === userId && 
+    ['waiting', 'current'].includes(member.status)
+  );
+  
+  if (existingMember) {
+    throw new Error('User is already in this queue');
+  }
+  
   const nextNumber = this.currentNumber + 1;
   this.members.push({
     user: userId,
     queueNumber: nextNumber,
-    status: 'waiting'
+    status: 'waiting',
+    notes: projectInterest || '',
+    joinedAt: new Date()
   });
   this.currentNumber = nextNumber;
   return this.save();

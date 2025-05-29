@@ -90,14 +90,15 @@ export const QueueProvider = ({ children }) => {
   };
 
   // Join a queue
-  const joinQueue = async (queueId) => {
+  const joinQueue = async (queueId, projectInterest) => {
     if (!isAuthenticated) {
       toast.error('You must be logged in to join a queue');
       return false;
     }
 
     try {
-      const res = await axios.post(`/api/queues/${queueId}/join`);
+      console.log('Joining queue with project interest:', projectInterest);
+      const res = await axios.post(`/api/queues/${queueId}/join`, { projectInterest });
       
       // Update the queues list
       setQueues(queues.map(q => 
@@ -189,7 +190,13 @@ export const QueueProvider = ({ children }) => {
   // Create a new queue (mentor/admin only)
   const createQueue = async (queueData) => {
     try {
-      const res = await axios.post('/api/queues', queueData);
+      // Ensure date is properly formatted
+      const formattedData = {
+        ...queueData,
+        date: new Date(queueData.date)
+      };
+      
+      const res = await axios.post('/api/queues', formattedData);
       
       // Add the new queue to the list
       setQueues([...queues, res.data]);
@@ -197,6 +204,7 @@ export const QueueProvider = ({ children }) => {
       toast.success('Queue created successfully!');
       return res.data;
     } catch (err) {
+      console.error('Create queue error:', err);
       setError(err.response?.data.message || 'Failed to create queue');
       toast.error(err.response?.data.message || 'Failed to create queue');
       return null;
@@ -211,7 +219,22 @@ export const QueueProvider = ({ children }) => {
       // Add the new team to the list
       setTeams([...teams, res.data]);
       
-      toast.success('Team created successfully!');
+      // Automatically create a queue for the new team
+      const queueData = {
+        teamId: res.data._id,
+        date: new Date(),
+        estimatedTimePerPerson: 15
+      };
+      
+      try {
+        const queueRes = await axios.post('/api/queues', queueData);
+        setQueues([...queues, queueRes.data]);
+        toast.success('Team created successfully with an active queue!');
+      } catch (queueErr) {
+        console.error('Error creating automatic queue:', queueErr);
+        toast.warning('Team created, but could not create an automatic queue.');
+      }
+      
       return res.data;
     } catch (err) {
       setError(err.response?.data.message || 'Failed to create team');

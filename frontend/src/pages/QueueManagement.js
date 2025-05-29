@@ -30,6 +30,7 @@ import {
   IconButton,
   Chip
 } from '@mui/material';
+import { toast } from 'react-toastify';
 // Date picker components removed due to compatibility issues
 import PersonIcon from '@mui/icons-material/Person';
 import DeleteIcon from '@mui/icons-material/Delete';
@@ -63,8 +64,13 @@ const QueueManagement = () => {
 
   useEffect(() => {
     if (teams.length > 0 && user) {
-      // Find teams where the user is the mentor
-      const userTeams = teams.filter(team => team.mentor._id === user._id);
+      let userTeams;
+      // If user is admin, show all teams, otherwise only show teams where user is the mentor
+      if (user.role === 'admin') {
+        userTeams = teams;
+      } else {
+        userTeams = teams.filter(team => team.mentor._id === user._id);
+      }
       setMentorTeams(userTeams);
       
       if (userTeams.length > 0 && !selectedTeam) {
@@ -104,10 +110,20 @@ const QueueManagement = () => {
   };
 
   const handleCreateQueue = async () => {
+    if (!newQueueData.teamId) {
+      toast.error('Please select a team');
+      return;
+    }
+
     setProcessingAction(true);
-    await createQueue(newQueueData);
+    const result = await createQueue(newQueueData);
     setProcessingAction(false);
-    setOpenCreateDialog(false);
+    
+    if (result) {
+      setOpenCreateDialog(false);
+      // Refresh queues to show the newly created queue
+      fetchQueues();
+    }
   };
 
   const handleNextInQueue = async (queueId) => {
@@ -152,7 +168,11 @@ const QueueManagement = () => {
         
         {mentorTeams.length === 0 ? (
           <Alert severity="info" sx={{ mt: 2 }}>
-            You don't have any teams assigned to you. Please contact an administrator to create a team.
+            {user && user.role === 'admin' ? (
+              <>There are no teams in the system yet. You can create teams from the Dashboard.</>  
+            ) : (
+              <>You don't have any teams assigned to you. Please contact an administrator to create a team.</>
+            )}
           </Alert>
         ) : (
           <>
@@ -387,10 +407,10 @@ const QueueManagement = () => {
       <Dialog open={openCreateDialog} onClose={handleCreateDialogClose}>
         <DialogTitle>Create New Queue</DialogTitle>
         <DialogContent>
-          <DialogContentText>
+          <DialogContentText sx={{ mb: 2 }}>
             Create a new queue for students to join. This will allow students to line up for meetings with your team.
           </DialogContentText>
-          <FormControl fullWidth margin="normal">
+          <FormControl fullWidth margin="normal" required>
             <InputLabel id="create-team-select-label">Team</InputLabel>
             <Select
               labelId="create-team-select-label"
@@ -398,6 +418,7 @@ const QueueManagement = () => {
               value={newQueueData.teamId}
               label="Team"
               onChange={(e) => setNewQueueData({ ...newQueueData, teamId: e.target.value })}
+              error={!newQueueData.teamId}
             >
               {mentorTeams.map(team => (
                 <MenuItem key={team._id} value={team._id}>{team.name}</MenuItem>
@@ -414,6 +435,7 @@ const QueueManagement = () => {
             value={newQueueData.estimatedTimePerPerson}
             onChange={(e) => setNewQueueData({ ...newQueueData, estimatedTimePerPerson: parseInt(e.target.value) || 15 })}
             InputProps={{ inputProps: { min: 1, max: 60 } }}
+            helperText="Approximate time you'll spend with each student"
           />
         </DialogContent>
         <DialogActions>
@@ -421,6 +443,7 @@ const QueueManagement = () => {
           <Button 
             onClick={handleCreateQueue} 
             variant="contained"
+            color="primary"
             disabled={!newQueueData.teamId || processingAction}
           >
             {processingAction ? <CircularProgress size={24} /> : 'Create Queue'}

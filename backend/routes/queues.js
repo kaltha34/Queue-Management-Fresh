@@ -139,6 +139,7 @@ router.put('/:id/status', verifyToken, isMentorOrAdmin, async (req, res) => {
 // @access  Private
 router.post('/:id/join', verifyToken, async (req, res) => {
   try {
+    const { projectInterest } = req.body;
     const queue = await Queue.findById(req.params.id);
     
     if (!queue) {
@@ -159,8 +160,8 @@ router.post('/:id/join', verifyToken, async (req, res) => {
       return res.status(400).json({ message: 'You are already in this queue' });
     }
     
-    // Add user to queue
-    await queue.addToQueue(req.user.user.id);
+    // Add user to queue with project interest as notes
+    await queue.addToQueue(req.user.user.id, projectInterest);
     
     // Get updated queue
     const updatedQueue = await Queue.findById(req.params.id)
