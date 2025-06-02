@@ -1,7 +1,7 @@
 import React, { createContext, useState, useEffect } from 'react';
-import axios from 'axios';
 import { toast } from 'react-toastify';
 import jwt_decode from 'jwt-decode';
+import axiosInstance from '../utils/axiosConfig';
 
 const AuthContext = createContext();
 
@@ -15,10 +15,10 @@ export const AuthProvider = ({ children }) => {
   // Set auth token
   const setAuthToken = (token) => {
     if (token) {
-      axios.defaults.headers.common['x-auth-token'] = token;
+      // Store token in localStorage - our axiosInstance will use it automatically
       localStorage.setItem('token', token);
     } else {
-      delete axios.defaults.headers.common['x-auth-token'];
+      // Remove token from localStorage
       localStorage.removeItem('token');
     }
   };
@@ -28,7 +28,8 @@ export const AuthProvider = ({ children }) => {
     if (token) {
       setAuthToken(token);
       try {
-        const res = await axios.get('/api/auth/user');
+        console.log('Loading user data...');
+        const res = await axiosInstance.get('/api/auth/user');
         setUser(res.data);
         setIsAuthenticated(true);
       } catch (err) {
@@ -45,7 +46,7 @@ export const AuthProvider = ({ children }) => {
   // Register user
   const register = async (formData) => {
     try {
-      const res = await axios.post('/api/auth/register', formData);
+      const res = await axiosInstance.post('/api/auth/register', formData);
       setToken(res.data.token);
       setUser(res.data.user);
       setIsAuthenticated(true);
@@ -62,7 +63,7 @@ export const AuthProvider = ({ children }) => {
   // Login user
   const login = async (formData) => {
     try {
-      const res = await axios.post('/api/auth/login', formData);
+      const res = await axiosInstance.post('/api/auth/login', formData);
       setToken(res.data.token);
       setUser(res.data.user);
       setIsAuthenticated(true);
