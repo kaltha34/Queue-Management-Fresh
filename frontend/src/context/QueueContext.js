@@ -1,8 +1,8 @@
 import React, { createContext, useState, useEffect, useContext } from 'react';
-import axios from 'axios';
 import { toast } from 'react-toastify';
 import io from 'socket.io-client';
 import AuthContext from './AuthContext';
+import axiosInstance from '../utils/axiosConfig';
 
 const QueueContext = createContext();
 
@@ -48,7 +48,8 @@ export const QueueProvider = ({ children }) => {
   const fetchQueues = async () => {
     setLoading(true);
     try {
-      const res = await axios.get('/api/queues');
+      console.log('Fetching queues...');
+      const res = await axiosInstance.get('/api/queues');
       setQueues(res.data);
       setError(null);
     } catch (err) {
@@ -62,7 +63,8 @@ export const QueueProvider = ({ children }) => {
   const fetchTeams = async () => {
     setLoading(true);
     try {
-      const res = await axios.get('/api/teams');
+      console.log('Fetching teams...');
+      const res = await axiosInstance.get('/api/teams');
       setTeams(res.data);
       setError(null);
     } catch (err) {
@@ -76,7 +78,7 @@ export const QueueProvider = ({ children }) => {
   const fetchQueueById = async (queueId) => {
     setLoading(true);
     try {
-      const res = await axios.get(`/api/queues/${queueId}`);
+      const res = await axiosInstance.get(`/api/queues/${queueId}`);
       setCurrentQueue(res.data);
       setError(null);
       return res.data;
@@ -98,7 +100,7 @@ export const QueueProvider = ({ children }) => {
 
     try {
       console.log('Joining queue with project interest:', projectInterest);
-      const res = await axios.post(`/api/queues/${queueId}/join`, { projectInterest });
+      const res = await axiosInstance.post(`/api/queues/${queueId}/join`, { projectInterest });
       
       // Update the queues list
       setQueues(queues.map(q => 
@@ -132,7 +134,7 @@ export const QueueProvider = ({ children }) => {
     }
 
     try {
-      const res = await axios.put(`/api/queues/${queueId}/leave`);
+      const res = await axiosInstance.delete(`/api/queues/${queueId}/leave`);
       
       // Update the queues list
       setQueues(queues.map(q => 
@@ -161,7 +163,7 @@ export const QueueProvider = ({ children }) => {
   // Approve a queue request (only for team admin)
   const approveRequest = async (queueId, userId) => {
     try {
-      const res = await axios.put(`/api/queues/${queueId}/approve/${userId}`);
+      const res = await axiosInstance.put(`/api/queues/${queueId}/approve/${userId}`);
       
       // Update the queues list
       setQueues(queues.map(q => 
@@ -190,7 +192,7 @@ export const QueueProvider = ({ children }) => {
   // Reject a queue request (only for team admin)
   const rejectRequest = async (queueId, userId) => {
     try {
-      const res = await axios.put(`/api/queues/${queueId}/reject/${userId}`);
+      const res = await axiosInstance.put(`/api/queues/${queueId}/reject/${userId}`);
       
       // Update the queues list
       setQueues(queues.map(q => 
@@ -219,7 +221,7 @@ export const QueueProvider = ({ children }) => {
   // Move to next person in queue (mentor/admin only)
   const nextInQueue = async (queueId) => {
     try {
-      const res = await axios.put(`/api/queues/${queueId}/next`);
+      const res = await axiosInstance.put(`/api/queues/${queueId}/next`);
       
       // Update the queues list
       setQueues(queues.map(q => 
@@ -254,7 +256,7 @@ export const QueueProvider = ({ children }) => {
         date: new Date(queueData.date)
       };
       
-      const res = await axios.post('/api/queues', formattedData);
+      const res = await axiosInstance.post('/api/queues', formattedData);
       
       // Add the new queue to the list
       setQueues([...queues, res.data]);
@@ -272,7 +274,7 @@ export const QueueProvider = ({ children }) => {
   // Create a new team (mentor/admin only)
   const createTeam = async (teamData) => {
     try {
-      const res = await axios.post('/api/teams', teamData);
+      const res = await axiosInstance.post('/api/teams', teamData);
       
       // Add the new team to the list
       setTeams([...teams, res.data]);
@@ -285,7 +287,7 @@ export const QueueProvider = ({ children }) => {
       };
       
       try {
-        const queueRes = await axios.post('/api/queues', queueData);
+        const queueRes = await axiosInstance.post('/api/queues', queueData);
         setQueues([...queues, queueRes.data]);
         toast.success('Team created successfully with an active queue!');
       } catch (queueErr) {
@@ -304,7 +306,7 @@ export const QueueProvider = ({ children }) => {
   // Update queue status (mentor/admin only)
   const updateQueueStatus = async (queueId, status) => {
     try {
-      const res = await axios.put(`/api/queues/${queueId}/status`, { status });
+      const res = await axiosInstance.put(`/api/queues/${queueId}/status`, { status });
       
       // Update the queues list
       setQueues(queues.map(q => 
