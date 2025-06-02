@@ -57,8 +57,13 @@ const QueueManagement = () => {
   const [processingAction, setProcessingAction] = useState(false);
 
   useEffect(() => {
-    fetchTeams();
-    fetchQueues();
+    const loadData = async () => {
+      await fetchTeams();
+      await fetchQueues();
+      console.log('Teams and queues loaded');
+    };
+    
+    loadData();
     // eslint-disable-next-line
   }, []);
 
@@ -69,8 +74,17 @@ const QueueManagement = () => {
       if (user.role === 'admin') {
         userTeams = teams;
       } else {
-        userTeams = teams.filter(team => team.mentor._id === user._id);
+        // Fix: Ensure we're comparing string IDs correctly
+        userTeams = teams.filter(team => {
+          // Convert IDs to strings for comparison
+          const mentorId = team.mentor._id.toString();
+          const userId = user._id.toString();
+          console.log('Comparing mentor ID:', mentorId, 'with user ID:', userId);
+          return mentorId === userId;
+        });
       }
+      
+      console.log('User teams found:', userTeams.length);
       setMentorTeams(userTeams);
       
       if (userTeams.length > 0 && !selectedTeam) {
@@ -171,6 +185,11 @@ const QueueManagement = () => {
     );
   }
 
+  // Debug information
+  console.log('Current user:', user);
+  console.log('Teams available:', teams.length);
+  console.log('Mentor teams:', mentorTeams.length);
+  
   return (
     <Container maxWidth="lg">
       <Box sx={{ my: 4 }}>
@@ -178,7 +197,11 @@ const QueueManagement = () => {
           Queue Management
         </Typography>
         
-        {mentorTeams.length === 0 ? (
+        {loading ? (
+          <Box sx={{ display: 'flex', justifyContent: 'center', my: 4 }}>
+            <CircularProgress />
+          </Box>
+        ) : mentorTeams.length === 0 ? (
           <Alert severity="info" sx={{ mt: 2 }}>
             {user && user.role === 'admin' ? (
               <>There are no teams in the system yet. You can create teams from the Dashboard.</>  
@@ -345,76 +368,168 @@ const QueueManagement = () => {
                                     </Box>
                                   )}
                                   
-                                  {/* Pending Requests Section */}
-                                  {pendingMembers.length > 0 && (
-                                    <Box sx={{ mt: 2, mb: 3 }}>
-                                      <Typography variant="h6" gutterBottom sx={{ color: 'warning.main', fontWeight: 'bold' }}>
-                                        Pending Requests ({pendingMembers.length})
-                                      </Typography>
-                                      <Paper elevation={2} sx={{ bgcolor: '#fff9c4', border: '1px solid #ffc107' }}>
-                                        <List>
-                                          {pendingMembers.map((member, index) => (
-                                            <React.Fragment key={member._id}>
-                                              {index > 0 && <Divider component="li" />}
-                                              <ListItem
-                                                alignItems="flex-start"
-                                                sx={{ py: 2 }}
-                                              >
-                                                <ListItemAvatar>
-                                                  <Avatar sx={{ bgcolor: 'warning.main' }}>
-                                                    <PersonIcon />
-                                                  </Avatar>
-                                                </ListItemAvatar>
-                                                <ListItemText
-                                                  primary={
-                                                    <Typography variant="subtitle1" component="div" sx={{ fontWeight: 'bold' }}>
-                                                      {member.user.name}
-                                                    </Typography>
-                                                  }
-                                                  secondary={
-                                                    <>
-                                                      <Box sx={{ mt: 1, mb: 2 }}>
-                                                        <Typography variant="body1" component="div" sx={{ mb: 1 }}>
-                                                          <strong>Project Interest:</strong>
+                                  {/* Queue Members Section - Both Pending and Waiting */}
+                                  <Box sx={{ mt: 2, mb: 3 }}>
+                                    {/* Pending Requests Section */}
+                                    {pendingMembers.length > 0 && (
+                                      <Box sx={{ mb: 4 }}>
+                                        <Typography variant="h6" gutterBottom sx={{ color: 'warning.main', fontWeight: 'bold', display: 'flex', alignItems: 'center' }}>
+                                          <Chip label={pendingMembers.length} color="warning" size="small" sx={{ mr: 1, fontWeight: 'bold' }} />
+                                          Pending Requests
+                                        </Typography>
+                                        <Paper elevation={2} sx={{ bgcolor: '#fff9c4', border: '1px solid #ffc107' }}>
+                                          <List>
+                                            {pendingMembers.map((member, index) => (
+                                              <React.Fragment key={member._id}>
+                                                {index > 0 && <Divider component="li" />}
+                                                <ListItem
+                                                  alignItems="flex-start"
+                                                  sx={{ py: 2 }}
+                                                >
+                                                  <ListItemAvatar>
+                                                    <Avatar sx={{ bgcolor: 'warning.main' }}>
+                                                      <PersonIcon />
+                                                    </Avatar>
+                                                  </ListItemAvatar>
+                                                  <ListItemText
+                                                    primary={
+                                                      <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                                                        <Typography variant="subtitle1" component="div" sx={{ fontWeight: 'bold' }}>
+                                                          {member.user.name}
                                                         </Typography>
-                                                        <Paper elevation={0} sx={{ p: 1.5, bgcolor: 'background.paper', borderRadius: 1 }}>
-                                                          {member.notes || 'Not specified'}
-                                                        </Paper>
+                                                        <Chip size="small" label="Pending" color="warning" sx={{ ml: 1 }} />
                                                       </Box>
-                                                      <Typography component="span" variant="body2" color="text.secondary">
-                                                        Requested at {new Date(member.joinedAt).toLocaleTimeString()} on {new Date(member.joinedAt).toLocaleDateString()}
-                                                      </Typography>
-                                                    </>
-                                                  }
-                                                />
-                                                <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1, ml: 2, minWidth: 120 }}>
-                                                  <Button 
-                                                    color="success" 
-                                                    variant="contained" 
-                                                    fullWidth
-                                                    onClick={() => handleApproveRequest(queue._id, member.user._id)}
-                                                    disabled={processingAction}
-                                                    sx={{ fontWeight: 'bold' }}
+                                                    }
+                                                    secondary={
+                                                      <>
+                                                        <Box sx={{ mt: 1, mb: 2 }}>
+                                                          <Typography variant="body2" component="div" sx={{ mb: 0.5, color: 'text.secondary' }}>
+                                                            <strong>Email:</strong> {member.user.email}
+                                                          </Typography>
+                                                          <Typography variant="body1" component="div" sx={{ mb: 1 }}>
+                                                            <strong>Project Interest:</strong>
+                                                          </Typography>
+                                                          <Paper elevation={0} sx={{ p: 1.5, bgcolor: 'background.paper', borderRadius: 1 }}>
+                                                            {member.notes || 'Not specified'}
+                                                          </Paper>
+                                                        </Box>
+                                                        <Typography component="span" variant="body2" color="text.secondary">
+                                                          Requested at {new Date(member.joinedAt).toLocaleTimeString()} on {new Date(member.joinedAt).toLocaleDateString()}
+                                                        </Typography>
+                                                      </>
+                                                    }
+                                                  />
+                                                  <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1, ml: 2, minWidth: 120 }}>
+                                                    <Button 
+                                                      color="success" 
+                                                      variant="contained" 
+                                                      fullWidth
+                                                      onClick={() => handleApproveRequest(queue._id, member.user._id)}
+                                                      disabled={processingAction}
+                                                      sx={{ fontWeight: 'bold' }}
+                                                    >
+                                                      Approve
+                                                    </Button>
+                                                    <Button 
+                                                      color="error" 
+                                                      variant="outlined" 
+                                                      fullWidth
+                                                      onClick={() => handleRejectRequest(queue._id, member.user._id)}
+                                                      disabled={processingAction}
+                                                    >
+                                                      Reject
+                                                    </Button>
+                                                  </Box>
+                                                </ListItem>
+                                              </React.Fragment>
+                                            ))}
+                                          </List>
+                                        </Paper>
+                                      </Box>
+                                    )}
+                                    
+                                    {/* Waiting Students Section */}
+                                    {waitingMembers.length > 0 && (
+                                      <Box>
+                                        <Typography variant="h6" gutterBottom sx={{ color: 'success.main', fontWeight: 'bold', display: 'flex', alignItems: 'center' }}>
+                                          <Chip label={waitingMembers.length} color="success" size="small" sx={{ mr: 1, fontWeight: 'bold' }} />
+                                          Accepted Students in Queue
+                                        </Typography>
+                                        <Paper elevation={2} sx={{ bgcolor: '#e8f5e9', border: '1px solid #4caf50' }}>
+                                          <List>
+                                            {waitingMembers
+                                              .sort((a, b) => a.queueNumber - b.queueNumber)
+                                              .map((member, index) => (
+                                                <React.Fragment key={member._id}>
+                                                  {index > 0 && <Divider component="li" />}
+                                                  <ListItem
+                                                    alignItems="flex-start"
+                                                    sx={{ py: 2 }}
                                                   >
-                                                    Approve
-                                                  </Button>
-                                                  <Button 
-                                                    color="error" 
-                                                    variant="outlined" 
-                                                    fullWidth
-                                                    onClick={() => handleRejectRequest(queue._id, member.user._id)}
-                                                    disabled={processingAction}
-                                                  >
-                                                    Reject
-                                                  </Button>
-                                                </Box>
-                                              </ListItem>
-                                            </React.Fragment>
-                                          ))}
-                                        </List>
-                                      </Paper>
-                                    </Box>
-                                  )}
+                                                    <ListItemAvatar>
+                                                      <Avatar sx={{ bgcolor: index === 0 ? 'success.main' : 'primary.main' }}>
+                                                        {index === 0 ? <PlayArrowIcon /> : <PersonIcon />}
+                                                      </Avatar>
+                                                    </ListItemAvatar>
+                                                    <ListItemText
+                                                      primary={
+                                                        <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                                                          <Typography variant="subtitle1" component="div" sx={{ fontWeight: 'bold' }}>
+                                                            #{member.queueNumber} - {member.user.name}
+                                                          </Typography>
+                                                          {index === 0 && <Chip size="small" label="Next Up" color="success" sx={{ ml: 1 }} />}
+                                                        </Box>
+                                                      }
+                                                      secondary={
+                                                        <>
+                                                          <Box sx={{ mt: 1, mb: 2 }}>
+                                                            <Typography variant="body2" component="div" sx={{ mb: 0.5, color: 'text.secondary' }}>
+                                                              <strong>Email:</strong> {member.user.email}
+                                                            </Typography>
+                                                            <Typography variant="body1" component="div" sx={{ mb: 1 }}>
+                                                              <strong>Project Interest:</strong>
+                                                            </Typography>
+                                                            <Paper elevation={0} sx={{ p: 1.5, bgcolor: 'background.paper', borderRadius: 1 }}>
+                                                              {member.notes || 'Not specified'}
+                                                            </Paper>
+                                                          </Box>
+                                                          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                                            <Typography component="span" variant="body2" color="text.secondary">
+                                                              Joined at {new Date(member.joinedAt).toLocaleTimeString()} on {new Date(member.joinedAt).toLocaleDateString()}
+                                                            </Typography>
+                                                            <Typography component="span" variant="body2" sx={{ fontWeight: 'bold', color: 'primary.main' }}>
+                                                              Est. wait: ~{queue.estimatedTimePerPerson * (member.queueNumber - (queue.currentNumber || 0))} min
+                                                            </Typography>
+                                                          </Box>
+                                                        </>
+                                                      }
+                                                    />
+                                                    {index === 0 && (
+                                                      <Box sx={{ ml: 2 }}>
+                                                        <Button
+                                                          variant="contained"
+                                                          color="primary"
+                                                          onClick={() => handleNextInQueue(queue._id)}
+                                                          disabled={processingAction || queue.status !== 'active'}
+                                                        >
+                                                          Start Session
+                                                        </Button>
+                                                      </Box>
+                                                    )}
+                                                  </ListItem>
+                                                </React.Fragment>
+                                              ))}
+                                          </List>
+                                        </Paper>
+                                      </Box>
+                                    )}
+                                    
+                                    {pendingMembers.length === 0 && waitingMembers.length === 0 && (
+                                      <Alert severity="info" sx={{ mt: 2 }}>
+                                        No students in the queue yet.
+                                      </Alert>
+                                    )}
+                                  </Box>
                                   
                                   {/* Waiting Students Section */}
                                   {waitingMembers.length > 0 ? (
