@@ -12,11 +12,13 @@ import {
   Button,
   Tooltip,
   MenuItem,
-  Link
+  Link,
+  Divider
 } from '@mui/material';
 import MenuIcon from '@mui/icons-material/Menu';
 import QueueIcon from '@mui/icons-material/Queue';
 import AuthContext from '../../context/AuthContext';
+import DarkModeToggle from '../DarkModeToggle';
 
 const Header = () => {
   const { isAuthenticated, user, logout, isMentorOrAdmin } = useContext(AuthContext);
@@ -189,6 +191,11 @@ const Header = () => {
             ))}
           </Box>
 
+          {/* Dark Mode Toggle */}
+          <Box sx={{ mr: 2 }}>
+            <DarkModeToggle />
+          </Box>
+          
           {/* User menu */}
           <Box sx={{ flexGrow: 0 }}>
             <Tooltip title="Open settings">

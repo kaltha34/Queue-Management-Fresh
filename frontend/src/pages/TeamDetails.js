@@ -318,40 +318,80 @@ const TeamDetails = () => {
                             {joining ? <CircularProgress size={24} /> : 'Join Queue'}
                           </Button>
                         )
-                      )}
-                      
-                      {!isAuthenticated && (
-                        <Button 
-                          variant="contained" 
-                          color="primary" 
-                          fullWidth 
-                          onClick={() => navigate('/login')}
-                        >
-                          Login to Join Queue
-                        </Button>
-                      )}
-                    </>
-                  ) : (
-                    <>
-                      <Alert severity="info" sx={{ mb: 2 }}>
-                        No active queue for this team at the moment.
-                      </Alert>
-                      
-                      {user && (user.role === 'admin' || (team && team.mentor._id === user._id)) && (
+                      ) : isPending ? (
+                        <>
+                          <Alert severity="warning" sx={{ mb: 2 }}>
+                            <AlertTitle>Request Pending</AlertTitle>
+                            Your request to join this queue is waiting for approval from the team mentor.
+                          </Alert>
+                          
+                          <Button 
+                            variant="outlined" 
+                            color="error" 
+                            fullWidth 
+                            onClick={handleLeaveQueue}
+                            disabled={leaving}
+                          >
+                            {leaving ? <CircularProgress size={24} /> : 'Cancel Request'}
+                          </Button>
+                        </>
+                      ) : (
                         <Button
                           variant="contained"
                           color="primary"
                           fullWidth
-                          onClick={handleCreateQueue}
-                          disabled={creatingQueue}
+                          onClick={handleJoinQueueClick}
+                          disabled={isInQueue || isPending || !activeQueue || joining}
                         >
-                          {creatingQueue ? <CircularProgress size={24} /> : 'Create Queue Now'}
+                          {joining ? (
+                            <>
+                              <CircularProgress size={24} color="inherit" sx={{ mr: 1 }} />
+                              Joining...
+                            </>
+                          ) : isPending ? 'Request Pending' : 'Join Queue'}
                         </Button>
-                      )}
-                    </>
-                  )}
-                </CardContent>
-              </Card>
+                      )
+                    
+                    
+                    {!isAuthenticated && (
+                      <Button 
+                        variant="contained" 
+                        color="primary" 
+                        onClick={handleJoinQueueClick}
+                        disabled={isInQueue || isPending || !activeQueue || joining}
+                        fullWidth
+                      >
+                        {joining ? (
+                          <>
+                            <CircularProgress size={24} color="inherit" sx={{ mr: 1 }} />
+                            Joining...
+                          </>
+                        ) : isPending ? 'Request Pending' : 'Join Queue'}
+                      </Button>
+                    )}
+                  </>
+                ) : (
+                  <>
+                    <Alert severity="info" sx={{ mb: 2 }}>
+                      No active queue for this team at the moment.
+                    </Alert>
+                    
+                    {user && (user.role === 'admin' || (team && team.mentor._id === user._id)) && (
+                      <Button
+                        variant="contained"
+                        color="primary"
+                        onClick={handleCreateQueue}
+                        disabled={creatingQueue || (user && user.role !== 'admin' && team.mentor._id !== user._id)}
+                        startIcon={creatingQueue ? <CircularProgress size={20} /> : <MeetingRoomIcon />}
+                        fullWidth
+                      >
+                        {creatingQueue ? 'Creating...' : 'Create Queue Now'}
+                      </Button>
+                    )}
+                  </>
+                )}
+              </CardContent>
+            </Card>
             </Grid>
           </Grid>
         </Box>
