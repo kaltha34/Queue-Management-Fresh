@@ -38,8 +38,11 @@ import PlayArrowIcon from '@mui/icons-material/PlayArrow';
 import PauseIcon from '@mui/icons-material/Pause';
 import StopIcon from '@mui/icons-material/Stop';
 import AddIcon from '@mui/icons-material/Add';
+import RefreshIcon from '@mui/icons-material/Refresh';
 import QueueContext from '../context/QueueContext';
 import AuthContext from '../context/AuthContext';
+import QueueStatistics from '../components/QueueStatistics';
+import QueueSearch from '../components/QueueSearch';
 
 const QueueManagement = () => {
   const { teams, queues, loading, fetchTeams, fetchQueues, nextInQueue, createQueue, updateQueueStatus, approveRequest, rejectRequest } = useContext(QueueContext);
@@ -55,6 +58,8 @@ const QueueManagement = () => {
     estimatedTimePerPerson: 15
   });
   const [processingAction, setProcessingAction] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
+  const [searchTerm, setSearchTerm] = useState('');
 
   useEffect(() => {
     const loadData = async () => {
@@ -66,6 +71,14 @@ const QueueManagement = () => {
     loadData();
     // eslint-disable-next-line
   }, []);
+  
+  const handleRefresh = async () => {
+    setRefreshing(true);
+    await fetchTeams();
+    await fetchQueues();
+    setRefreshing(false);
+    toast.success('Data refreshed successfully');
+  };
 
   useEffect(() => {
     if (teams.length > 0 && user) {
@@ -193,9 +206,19 @@ const QueueManagement = () => {
   return (
     <Container maxWidth="lg">
       <Box sx={{ my: 4 }}>
-        <Typography variant="h4" component="h1" gutterBottom>
-          Queue Management
-        </Typography>
+        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+          <Typography variant="h4" component="h1" gutterBottom>
+            Queue Management
+          </Typography>
+          <Button
+            variant="outlined"
+            startIcon={refreshing ? <CircularProgress size={20} /> : <RefreshIcon />}
+            onClick={handleRefresh}
+            disabled={refreshing}
+          >
+            {refreshing ? 'Refreshing...' : 'Refresh'}
+          </Button>
+        </Box>
         
         {loading ? (
           <Box sx={{ display: 'flex', justifyContent: 'center', my: 4 }}>
@@ -289,11 +312,15 @@ const QueueManagement = () => {
                       const waitingMembers = queue.members.filter(m => m.status === 'waiting');
                       const pendingMembers = queue.members.filter(m => m.status === 'pending');
                       const currentMember = queue.members.find(m => m.status === 'current');
-                      
                       return (
                         <Grid item xs={12} key={queue._id}>
                           <Card>
                             <CardContent>
+                              {/* Add Queue Statistics */}
+                              <QueueStatistics queue={queue} />
+                              
+                              {/* Add Search Feature */}
+                              <QueueSearch onSearch={(term) => setSearchTerm(term)} />
                               <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
                                 <Typography variant="h6">
                                   Queue for {new Date(queue.date).toLocaleDateString()}
@@ -458,6 +485,11 @@ const QueueManagement = () => {
                                         <Paper elevation={2} sx={{ bgcolor: '#e8f5e9', border: '1px solid #4caf50' }}>
                                           <List>
                                             {waitingMembers
+                                              .filter(member => 
+                                                !searchTerm || 
+                                                member.user.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                                                (member.notes && member.notes.toLowerCase().includes(searchTerm.toLowerCase()))
+                                              )
                                               .sort((a, b) => a.queueNumber - b.queueNumber)
                                               .map((member, index) => (
                                                 <React.Fragment key={member._id}>
@@ -550,6 +582,11 @@ const QueueManagement = () => {
                                       <Paper variant="outlined">
                                         <List dense>
                                           {waitingMembers
+                                            .filter(member => 
+                                              !searchTerm || 
+                                              member.user.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                                              (member.notes && member.notes.toLowerCase().includes(searchTerm.toLowerCase()))
+                                            )
                                             .sort((a, b) => a.queueNumber - b.queueNumber)
                                             .slice(0, 5)
                                             .map((member, index) => (
