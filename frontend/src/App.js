@@ -1,13 +1,13 @@
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
-import { ThemeProvider, createTheme } from '@mui/material/styles';
-import CssBaseline from '@mui/material/CssBaseline';
 import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
+import NotificationSound from './components/NotificationSound';
 
 // Context Providers
 import { AuthProvider } from './context/AuthContext';
 import { QueueProvider } from './context/QueueContext';
+import { ThemeProvider } from './context/ThemeContext';
 
 // Components
 import Header from './components/layout/Header';
@@ -25,32 +25,11 @@ import QueueManagement from './pages/QueueManagement';
 import Profile from './pages/Profile';
 import NotFound from './pages/NotFound';
 
-// Create a theme
-const theme = createTheme({
-  palette: {
-    primary: {
-      main: '#1976d2',
-    },
-    secondary: {
-      main: '#f50057',
-    },
-    background: {
-      default: '#f5f5f5',
-    },
-  },
-  typography: {
-    fontFamily: [
-      'Roboto',
-      'Arial',
-      'sans-serif',
-    ].join(','),
-  },
-});
+// Theme is now managed by ThemeContext
 
 function App() {
   return (
-    <ThemeProvider theme={theme}>
-      <CssBaseline />
+    <ThemeProvider>
       <AuthProvider>
         <QueueProvider>
           <Router>
@@ -85,7 +64,8 @@ function App() {
             </main>
             <Footer />
           </Router>
-          <ToastContainer position="bottom-right" />
+          <ToastContainer position="top-right" autoClose={3000} hideProgressBar={false} newestOnTop closeOnClick rtl={false} pauseOnFocusLoss draggable pauseOnHover />
+          <NotificationSound />
         </QueueProvider>
       </AuthProvider>
     </ThemeProvider>
