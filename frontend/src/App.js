@@ -5,6 +5,7 @@ import 'react-toastify/dist/ReactToastify.css';
 import NotificationSound from './components/NotificationSound';
 import ErrorBoundary from './components/ErrorBoundary';
 import BackToTop from './components/BackToTop';
+import KeyboardShortcuts from './components/KeyboardShortcuts';
 
 // Context Providers
 import { AuthProvider } from './context/AuthContext';
@@ -70,6 +71,7 @@ function App() {
             <ToastContainer position="top-right" autoClose={3000} hideProgressBar={false} newestOnTop closeOnClick rtl={false} pauseOnFocusLoss draggable pauseOnHover />
             <NotificationSound />
             <BackToTop />
+            <KeyboardShortcuts />
           </QueueProvider>
         </AuthProvider>
       </ThemeProvider>
