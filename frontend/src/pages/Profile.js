@@ -30,6 +30,7 @@ const Profile = () => {
   
   const [errors, setErrors] = useState({});
   const [loading, setLoading] = useState(false);
+  const [initialLoading, setInitialLoading] = useState(true);
   const [success, setSuccess] = useState(false);
   const [message, setMessage] = useState('');
   
@@ -40,6 +41,7 @@ const Profile = () => {
         name: user.name,
         email: user.email
       }));
+      setInitialLoading(false);
     }
   }, [user]);
   
@@ -155,6 +157,19 @@ const Profile = () => {
     );
   }
   
+  if (initialLoading) {
+    return (
+      <Container maxWidth="md">
+        <Box sx={{ my: 4, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '50vh' }}>
+          <CircularProgress size={60} />
+          <Typography variant="h6" sx={{ mt: 2 }}>
+            Loading profile...
+          </Typography>
+        </Box>
+      </Container>
+    );
+  }
+
   return (
     <Container maxWidth="md">
       <Box sx={{ my: 4 }}>
