@@ -4,6 +4,7 @@ import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import NotificationSound from './components/NotificationSound';
 import ErrorBoundary from './components/ErrorBoundary';
+import BackToTop from './components/BackToTop';
 
 // Context Providers
 import { AuthProvider } from './context/AuthContext';
@@ -68,6 +69,7 @@ function App() {
             </Router>
             <ToastContainer position="top-right" autoClose={3000} hideProgressBar={false} newestOnTop closeOnClick rtl={false} pauseOnFocusLoss draggable pauseOnHover />
             <NotificationSound />
+            <BackToTop />
           </QueueProvider>
         </AuthProvider>
       </ThemeProvider>
