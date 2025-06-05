@@ -192,29 +192,48 @@ export const QueueProvider = ({ children }) => {
   // Reject a queue request (only for team admin)
   const rejectRequest = async (queueId, userId) => {
     try {
-      const res = await axiosInstance.put(`/api/queues/${queueId}/reject/${userId}`);
+      const res = await axiosInstance.post(`/api/queues/${queueId}/reject/${userId}`);
       
       // Update the queues list
       setQueues(queues.map(q => 
         q._id === queueId ? res.data : q
       ));
       
-      // Update current queue if it's the one being updated
+      // Update current queue if it's the one being modified
       if (currentQueue && currentQueue._id === queueId) {
         setCurrentQueue(res.data);
       }
       
-      // Emit socket event
-      if (socket) {
-        socket.emit('queueUpdate', { queueId });
-      }
-      
-      toast.success('Request rejected!');
-      return true;
+      toast.success('Request rejected.');
+      return res.data;
     } catch (err) {
       setError(err.response?.data.message || 'Failed to reject request');
       toast.error(err.response?.data.message || 'Failed to reject request');
-      return false;
+      return null;
+    }
+  };
+
+  // Update member notes (mentor/admin only)
+  const updateMemberNotes = async (queueId, userId, notes) => {
+    try {
+      const res = await axiosInstance.post(`/api/queues/${queueId}/notes/${userId}`, { notes });
+      
+      // Update the queues list
+      setQueues(queues.map(q => 
+        q._id === queueId ? res.data : q
+      ));
+      
+      // Update current queue if it's the one being modified
+      if (currentQueue && currentQueue._id === queueId) {
+        setCurrentQueue(res.data);
+      }
+      
+      toast.success('Notes updated successfully.');
+      return res.data;
+    } catch (err) {
+      setError(err.response?.data.message || 'Failed to update notes');
+      toast.error(err.response?.data.message || 'Failed to update notes');
+      return null;
     }
   };
 
@@ -381,6 +400,7 @@ export const QueueProvider = ({ children }) => {
         updateQueueStatus,
         approveRequest,
         rejectRequest,
+        updateMemberNotes,
         getUserQueuePosition,
         setCurrentQueue
       }}

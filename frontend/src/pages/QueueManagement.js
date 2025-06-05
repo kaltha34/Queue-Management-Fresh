@@ -44,9 +44,10 @@ import AuthContext from '../context/AuthContext';
 import QueueStatistics from '../components/QueueStatistics';
 import QueueSearch from '../components/QueueSearch';
 import ConfirmationDialog from '../components/ConfirmationDialog';
+import StudentNotes from '../components/StudentNotes';
 
 const QueueManagement = () => {
-  const { teams, queues, loading, fetchTeams, fetchQueues, nextInQueue, createQueue, updateQueueStatus, approveRequest, rejectRequest } = useContext(QueueContext);
+  const { teams, queues, loading, fetchTeams, fetchQueues, nextInQueue, createQueue, updateQueueStatus, approveRequest, rejectRequest, updateMemberNotes } = useContext(QueueContext);
   const { user } = useContext(AuthContext);
   
   const [mentorTeams, setMentorTeams] = useState([]);
@@ -209,6 +210,17 @@ const QueueManagement = () => {
         setConfirmDialog(prev => ({ ...prev, open: false }));
       }
     });
+  };
+  
+  const handleSaveNotes = async (queueId, userId, notes) => {
+    setProcessingAction(true);
+    try {
+      await updateMemberNotes(queueId, userId, notes);
+    } catch (error) {
+      console.error('Error saving notes:', error);
+    } finally {
+      setProcessingAction(false);
+    }
   };
 
   const handleQueueStatusChange = async (queueId, status) => {
@@ -470,9 +482,17 @@ const QueueManagement = () => {
                                                     secondary={
                                                       <>
                                                         <Box sx={{ mt: 1, mb: 2 }}>
-                                                          <Typography variant="body2" component="div" sx={{ mb: 0.5, color: 'text.secondary' }}>
-                                                            <strong>Email:</strong> {member.user.email}
-                                                          </Typography>
+                                                          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 0.5 }}>
+                                                            <Typography variant="body2" component="div" sx={{ color: 'text.secondary' }}>
+                                                              <strong>Email:</strong> {member.user.email}
+                                                            </Typography>
+                                                            <StudentNotes 
+                                                              studentId={member.user._id}
+                                                              studentName={member.user.name}
+                                                              initialNotes={member.mentorNotes || ''}
+                                                              onSave={(userId, notes) => handleSaveNotes(queue._id, userId, notes)}
+                                                            />
+                                                          </Box>
                                                           <Typography variant="body1" component="div" sx={{ mb: 1 }}>
                                                             <strong>Project Interest:</strong>
                                                           </Typography>
@@ -555,9 +575,17 @@ const QueueManagement = () => {
                                                       secondary={
                                                         <>
                                                           <Box sx={{ mt: 1, mb: 2 }}>
-                                                            <Typography variant="body2" component="div" sx={{ mb: 0.5, color: 'text.secondary' }}>
-                                                              <strong>Email:</strong> {member.user.email}
-                                                            </Typography>
+                                                            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 0.5 }}>
+                                                              <Typography variant="body2" component="div" sx={{ color: 'text.secondary' }}>
+                                                                <strong>Email:</strong> {member.user.email}
+                                                              </Typography>
+                                                              <StudentNotes 
+                                                                studentId={member.user._id}
+                                                                studentName={member.user.name}
+                                                                initialNotes={member.mentorNotes || ''}
+                                                                onSave={(userId, notes) => handleSaveNotes(queue._id, userId, notes)}
+                                                              />
+                                                            </Box>
                                                             <Typography variant="body1" component="div" sx={{ mb: 1 }}>
                                                               <strong>Project Interest:</strong>
                                                             </Typography>
