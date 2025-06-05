@@ -19,6 +19,9 @@ const Footer = () => {
         <Typography variant="body1" align="center">
           Queue Management System for Devora Platform
         </Typography>
+        <Typography variant="body2" color="text.secondary" align="center" sx={{ mt: 1 }}>
+          Version 1.2.0
+        </Typography>
         <Typography variant="body2" color="text.secondary" align="center">
           {'© '}
           {new Date().getFullYear()}
