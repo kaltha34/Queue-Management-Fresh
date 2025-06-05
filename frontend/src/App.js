@@ -3,6 +3,7 @@ import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import NotificationSound from './components/NotificationSound';
+import ErrorBoundary from './components/ErrorBoundary';
 
 // Context Providers
 import { AuthProvider } from './context/AuthContext';
@@ -29,46 +30,48 @@ import NotFound from './pages/NotFound';
 
 function App() {
   return (
-    <ThemeProvider>
-      <AuthProvider>
-        <QueueProvider>
-          <Router>
-            <Header />
-            <main style={{ minHeight: 'calc(100vh - 130px)', padding: '20px 0' }}>
-              <Routes>
-                <Route path="/" element={<Home />} />
-                <Route path="/login" element={<Login />} />
-                <Route path="/register" element={<Register />} />
-                <Route path="/team/:id" element={<TeamDetails />} />
-                
-                {/* Protected Routes */}
-                <Route path="/dashboard" element={
-                  <PrivateRoute>
-                    <Dashboard />
-                  </PrivateRoute>
-                } />
-                <Route path="/profile" element={
-                  <PrivateRoute>
-                    <Profile />
-                  </PrivateRoute>
-                } />
-                <Route path="/queue-management" element={
-                  <MentorRoute>
-                    <QueueManagement />
-                  </MentorRoute>
-                } />
-                
-                {/* 404 Route */}
-                <Route path="*" element={<NotFound />} />
-              </Routes>
-            </main>
-            <Footer />
-          </Router>
-          <ToastContainer position="top-right" autoClose={3000} hideProgressBar={false} newestOnTop closeOnClick rtl={false} pauseOnFocusLoss draggable pauseOnHover />
-          <NotificationSound />
-        </QueueProvider>
-      </AuthProvider>
-    </ThemeProvider>
+    <ErrorBoundary>
+      <ThemeProvider>
+        <AuthProvider>
+          <QueueProvider>
+            <Router>
+              <Header />
+              <main style={{ minHeight: 'calc(100vh - 130px)', padding: '20px 0' }}>
+                <Routes>
+                  <Route path="/" element={<Home />} />
+                  <Route path="/login" element={<Login />} />
+                  <Route path="/register" element={<Register />} />
+                  <Route path="/team/:id" element={<TeamDetails />} />
+                  
+                  {/* Protected Routes */}
+                  <Route path="/dashboard" element={
+                    <PrivateRoute>
+                      <Dashboard />
+                    </PrivateRoute>
+                  } />
+                  <Route path="/profile" element={
+                    <PrivateRoute>
+                      <Profile />
+                    </PrivateRoute>
+                  } />
+                  <Route path="/queue-management" element={
+                    <MentorRoute>
+                      <QueueManagement />
+                    </MentorRoute>
+                  } />
+                  
+                  {/* 404 Route */}
+                  <Route path="*" element={<NotFound />} />
+                </Routes>
+              </main>
+              <Footer />
+            </Router>
+            <ToastContainer position="top-right" autoClose={3000} hideProgressBar={false} newestOnTop closeOnClick rtl={false} pauseOnFocusLoss draggable pauseOnHover />
+            <NotificationSound />
+          </QueueProvider>
+        </AuthProvider>
+      </ThemeProvider>
+    </ErrorBoundary>
   );
 }
 
