@@ -43,6 +43,7 @@ import QueueContext from '../context/QueueContext';
 import AuthContext from '../context/AuthContext';
 import QueueStatistics from '../components/QueueStatistics';
 import QueueSearch from '../components/QueueSearch';
+import ConfirmationDialog from '../components/ConfirmationDialog';
 
 const QueueManagement = () => {
   const { teams, queues, loading, fetchTeams, fetchQueues, nextInQueue, createQueue, updateQueueStatus, approveRequest, rejectRequest } = useContext(QueueContext);
@@ -60,6 +61,15 @@ const QueueManagement = () => {
   const [processingAction, setProcessingAction] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
+  
+  // Confirmation dialog states
+  const [confirmDialog, setConfirmDialog] = useState({
+    open: false,
+    title: '',
+    message: '',
+    confirmAction: null,
+    confirmColor: 'primary'
+  });
 
   useEffect(() => {
     const loadData = async () => {
@@ -154,21 +164,51 @@ const QueueManagement = () => {
   };
 
   const handleNextInQueue = async (queueId) => {
-    setProcessingAction(true);
-    await nextInQueue(queueId);
-    setProcessingAction(false);
+    setConfirmDialog({
+      open: true,
+      title: 'Next Student',
+      message: 'Are you ready to serve the next student in the queue?',
+      confirmText: 'Next Student',
+      confirmColor: 'primary',
+      confirmAction: async () => {
+        setProcessingAction(true);
+        await nextInQueue(queueId);
+        setProcessingAction(false);
+        setConfirmDialog(prev => ({ ...prev, open: false }));
+      }
+    });
   };
 
   const handleApproveRequest = async (queueId, userId) => {
-    setProcessingAction(true);
-    await approveRequest(queueId, userId);
-    setProcessingAction(false);
+    setConfirmDialog({
+      open: true,
+      title: 'Approve Request',
+      message: 'Are you sure you want to approve this student\'s request to join the queue?',
+      confirmText: 'Approve',
+      confirmColor: 'success',
+      confirmAction: async () => {
+        setProcessingAction(true);
+        await approveRequest(queueId, userId);
+        setProcessingAction(false);
+        setConfirmDialog(prev => ({ ...prev, open: false }));
+      }
+    });
   };
 
   const handleRejectRequest = async (queueId, userId) => {
-    setProcessingAction(true);
-    await rejectRequest(queueId, userId);
-    setProcessingAction(false);
+    setConfirmDialog({
+      open: true,
+      title: 'Reject Request',
+      message: 'Are you sure you want to reject this student\'s request to join the queue?',
+      confirmText: 'Reject',
+      confirmColor: 'error',
+      confirmAction: async () => {
+        setProcessingAction(true);
+        await rejectRequest(queueId, userId);
+        setProcessingAction(false);
+        setConfirmDialog(prev => ({ ...prev, open: false }));
+      }
+    });
   };
 
   const handleQueueStatusChange = async (queueId, status) => {
@@ -700,6 +740,17 @@ const QueueManagement = () => {
           </Button>
         </DialogActions>
       </Dialog>
+      
+      {/* Confirmation Dialog */}
+      <ConfirmationDialog
+        open={confirmDialog.open}
+        title={confirmDialog.title}
+        message={confirmDialog.message}
+        confirmText={confirmDialog.confirmText || 'Confirm'}
+        confirmColor={confirmDialog.confirmColor || 'primary'}
+        onConfirm={() => confirmDialog.confirmAction && confirmDialog.confirmAction()}
+        onCancel={() => setConfirmDialog(prev => ({ ...prev, open: false }))}
+      />
     </Container>
   );
 };
