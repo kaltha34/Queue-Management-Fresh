@@ -50,11 +50,23 @@ export const QueueProvider = ({ children }) => {
     try {
       console.log('Fetching queues...');
       const res = await axiosInstance.get('/api/queues');
-      setQueues(res.data);
-      setError(null);
+      if (res && res.data) {
+        setQueues(res.data);
+        setError(null);
+      }
     } catch (err) {
-      setError(err.response?.data.message || 'Failed to fetch queues');
-      toast.error(err.response?.data.message || 'Failed to fetch queues');
+      console.error('Error fetching queues:', err);
+      // Only show toast for specific errors, not connection errors
+      if (err.response) {
+        setError(err.response.data?.message || 'Failed to fetch queues');
+        // Only show toast for specific API errors, not general connection errors
+        if (err.response.status !== 404 && err.response.status !== 500) {
+          toast.error(err.response.data?.message || 'Failed to fetch queues');
+        }
+      } else {
+        setError('Cannot connect to server. Please check if the backend is running.');
+        // Don't show toast for connection errors to avoid spamming the user
+      }
     }
     setLoading(false);
   };
@@ -65,11 +77,23 @@ export const QueueProvider = ({ children }) => {
     try {
       console.log('Fetching teams...');
       const res = await axiosInstance.get('/api/teams');
-      setTeams(res.data);
-      setError(null);
+      if (res && res.data) {
+        setTeams(res.data);
+        setError(null);
+      }
     } catch (err) {
-      setError(err.response?.data.message || 'Failed to fetch teams');
-      toast.error(err.response?.data.message || 'Failed to fetch teams');
+      console.error('Error fetching teams:', err);
+      // Only show toast for specific errors, not connection errors
+      if (err.response) {
+        setError(err.response.data?.message || 'Failed to fetch teams');
+        // Only show toast for specific API errors, not general connection errors
+        if (err.response.status !== 404 && err.response.status !== 500) {
+          toast.error(err.response.data?.message || 'Failed to fetch teams');
+        }
+      } else {
+        setError('Cannot connect to server. Please check if the backend is running.');
+        // Don't show toast for connection errors to avoid spamming the user
+      }
     }
     setLoading(false);
   };
