@@ -318,37 +318,38 @@ const TeamDetails = () => {
                             {joining ? <CircularProgress size={24} /> : 'Join Queue'}
                           </Button>
                         )
-                      ) : isPending ? (
-                        <>
-                          <Alert severity="warning" sx={{ mb: 2 }}>
-                            <AlertTitle>Request Pending</AlertTitle>
-                            Your request to join this queue is waiting for approval from the team mentor.
-                          </Alert>
-                          
-                          <Button 
-                            variant="outlined" 
-                            color="error" 
-                            fullWidth 
-                            onClick={handleLeaveQueue}
-                            disabled={leaving}
-                          >
-                            {leaving ? <CircularProgress size={24} /> : 'Cancel Request'}
-                          </Button>
-                        </>
-                      ) : (
-                        <Button
-                          variant="contained"
-                          color="primary"
-                          fullWidth
-                          onClick={handleJoinQueueClick}
-                          disabled={isInQueue || isPending || !activeQueue || joining}
+                      )
+                    ) : isPending ? (
+                      <>
+                        <Alert severity="warning" sx={{ mb: 2 }}>
+                          <AlertTitle>Request Pending</AlertTitle>
+                          Your request to join this queue is waiting for approval from the team mentor.
+                        </Alert>
+                        
+                        <Button 
+                          variant="outlined" 
+                          color="error" 
+                          fullWidth 
+                          onClick={handleLeaveQueue}
+                          disabled={leaving}
                         >
-                          {joining ? (
-                            <>
-                              <CircularProgress size={24} color="inherit" sx={{ mr: 1 }} />
-                              Joining...
-                            </>
-                          ) : isPending ? 'Request Pending' : 'Join Queue'}
+                          {leaving ? <CircularProgress size={24} /> : 'Cancel Request'}
+                        </Button>
+                      </>
+                    ) : (
+                      <Button
+                        variant="contained"
+                        color="primary"
+                        fullWidth
+                        onClick={handleJoinQueueClick}
+                        disabled={isInQueue || isPending || !activeQueue || joining}
+                      >
+                        {joining ? (
+                          <>
+                            <CircularProgress size={24} color="inherit" sx={{ mr: 1 }} />
+                            Joining...
+                          </>
+                        ) : isPending ? 'Request Pending' : 'Join Queue'}
                         </Button>
                       )
                     

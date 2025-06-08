@@ -11,7 +11,7 @@ import Breadcrumbs from './components/Breadcrumbs';
 // Context Providers
 import { AuthProvider } from './context/AuthContext';
 import { QueueProvider } from './context/QueueContext';
-import { ThemeProvider } from './context/ThemeContext';
+import { CustomThemeProvider } from './context/ThemeContext';
 
 // Components
 import Header from './components/layout/Header';
@@ -34,7 +34,7 @@ import NotFound from './pages/NotFound';
 function App() {
   return (
     <ErrorBoundary>
-      <ThemeProvider>
+      <CustomThemeProvider>
         <AuthProvider>
           <QueueProvider>
             <Router>
@@ -78,7 +78,7 @@ function App() {
             <KeyboardShortcuts />
           </QueueProvider>
         </AuthProvider>
-      </ThemeProvider>
+      </CustomThemeProvider>
     </ErrorBoundary>
   );
 }

@@ -4,7 +4,7 @@ import CssBaseline from '@mui/material/CssBaseline';
 
 export const ThemeContext = createContext();
 
-export const ThemeProvider = ({ children }) => {
+export const CustomThemeProvider = ({ children }) => {
   const [mode, setMode] = useState('light');
 
   const colorMode = useMemo(
