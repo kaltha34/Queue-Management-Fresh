@@ -6,6 +6,7 @@ import NotificationSound from './components/NotificationSound';
 import ErrorBoundary from './components/ErrorBoundary';
 import BackToTop from './components/BackToTop';
 import KeyboardShortcuts from './components/KeyboardShortcuts';
+import Breadcrumbs from './components/Breadcrumbs';
 
 // Context Providers
 import { AuthProvider } from './context/AuthContext';
@@ -39,6 +40,9 @@ function App() {
             <Router>
               <Header />
               <main style={{ minHeight: 'calc(100vh - 130px)', padding: '20px 0' }}>
+                <div className="container">
+                  <Breadcrumbs />
+                </div>
                 <Routes>
                   <Route path="/" element={<Home />} />
                   <Route path="/login" element={<Login />} />
