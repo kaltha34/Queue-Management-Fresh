@@ -50,15 +50,22 @@ export const AuthProvider = ({ children }) => {
   const register = async (formData) => {
     try {
       const res = await axiosInstance.post('/api/auth/register', formData);
-      setToken(res.data.token);
-      setUser(res.data.user);
-      setIsAuthenticated(true);
-      setAuthToken(res.data.token);
-      toast.success('Registration successful!');
-      return true;
+      if (res && res.data) {
+        setToken(res.data.token);
+        setUser(res.data.user);
+        setIsAuthenticated(true);
+        setAuthToken(res.data.token);
+        toast.success('Registration successful!');
+        return true;
+      } else {
+        throw new Error('Invalid response from server');
+      }
     } catch (err) {
-      setError(err.response.data.message || 'Registration failed');
-      toast.error(err.response.data.message || 'Registration failed');
+      const errorMessage = err.response && err.response.data ? 
+        err.response.data.message : 
+        err.message || 'Registration failed';
+      setError(errorMessage);
+      toast.error(errorMessage);
       return false;
     }
   };
@@ -67,15 +74,22 @@ export const AuthProvider = ({ children }) => {
   const login = async (formData) => {
     try {
       const res = await axiosInstance.post('/api/auth/login', formData);
-      setToken(res.data.token);
-      setUser(res.data.user);
-      setIsAuthenticated(true);
-      setAuthToken(res.data.token);
-      toast.success('Login successful!');
-      return true;
+      if (res && res.data) {
+        setToken(res.data.token);
+        setUser(res.data.user);
+        setIsAuthenticated(true);
+        setAuthToken(res.data.token);
+        toast.success('Login successful!');
+        return true;
+      } else {
+        throw new Error('Invalid response from server');
+      }
     } catch (err) {
-      setError(err.response.data.message || 'Login failed');
-      toast.error(err.response.data.message || 'Login failed');
+      const errorMessage = err.response && err.response.data ? 
+        err.response.data.message : 
+        err.message || 'Login failed';
+      setError(errorMessage);
+      toast.error(errorMessage);
       return false;
     }
   };

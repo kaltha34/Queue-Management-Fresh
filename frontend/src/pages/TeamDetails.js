@@ -270,92 +270,60 @@ const TeamDetails = () => {
                         </Typography>
                       </Box>
                       
-                      {isAuthenticated && (
-                        isInQueue ? (
-                          <>
-                            {userPosition && (
-                              <Alert severity="info" sx={{ mb: 2 }}>
-                                <AlertTitle>Your Position: #{userPosition.position}</AlertTitle>
-                                Estimated wait time: ~{userPosition.estimatedWaitTime} minutes
-                              </Alert>
+                      {isInQueue ? (
+                        <>
+                          <Alert severity="success" sx={{ mb: 2 }}>
+                            <AlertTitle>You're in the Queue!</AlertTitle>
+                            {userPosition !== null && (
+                              <Typography variant="body2">
+                                Your position: #{userPosition.position}
+                                {userPosition.estimatedWaitTime && ` (Est. wait: ~${userPosition.estimatedWaitTime} minutes)`}
+                              </Typography>
                             )}
-                            
-                            <Button 
-                              variant="outlined" 
-                              color="error" 
-                              fullWidth 
-                              onClick={handleLeaveQueue}
-                              disabled={leaving}
-                            >
-                              {leaving ? <CircularProgress size={24} /> : 'Leave Queue'}
-                            </Button>
-                          </>
-                        ) : isPending ? (
-                          <>
-                            <Alert severity="warning" sx={{ mb: 2 }}>
-                              <AlertTitle>Request Pending</AlertTitle>
-                              Your request to join this queue is waiting for approval from the team mentor.
-                            </Alert>
-                            
-                            <Button 
-                              variant="outlined" 
-                              color="error" 
-                              fullWidth 
-                              onClick={handleLeaveQueue}
-                              disabled={leaving}
-                            >
-                              {leaving ? <CircularProgress size={24} /> : 'Cancel Request'}
-                            </Button>
-                          </>
-                        ) : (
-                          <Button
-                            variant="contained"
-                            color="primary"
-                            fullWidth
-                            onClick={handleJoinQueueClick}
-                            disabled={joining}
+                          </Alert>
+                          
+                          <Button 
+                            variant="outlined" 
+                            color="error" 
+                            fullWidth 
+                            onClick={handleLeaveQueue}
+                            disabled={leaving}
                           >
-                            {joining ? <CircularProgress size={24} /> : 'Join Queue'}
+                            {leaving ? <CircularProgress size={24} /> : 'Leave Queue'}
                           </Button>
-                        )
-                      )
-                    ) : isPending ? (
-                      <>
-                        <Alert severity="warning" sx={{ mb: 2 }}>
-                          <AlertTitle>Request Pending</AlertTitle>
-                          Your request to join this queue is waiting for approval from the team mentor.
-                        </Alert>
-                        
-                        <Button 
-                          variant="outlined" 
-                          color="error" 
-                          fullWidth 
-                          onClick={handleLeaveQueue}
-                          disabled={leaving}
+                        </>
+                      ) : isPending ? (
+                        <>
+                          <Alert severity="warning" sx={{ mb: 2 }}>
+                            <AlertTitle>Request Pending</AlertTitle>
+                            Your request to join this queue is waiting for approval from the team mentor.
+                          </Alert>
+                          
+                          <Button 
+                            variant="outlined" 
+                            color="error" 
+                            fullWidth 
+                            onClick={handleLeaveQueue}
+                            disabled={leaving}
+                          >
+                            {leaving ? <CircularProgress size={24} /> : 'Cancel Request'}
+                          </Button>
+                        </>
+                      ) : (
+                        <Button
+                          variant="contained"
+                          color="primary"
+                          fullWidth
+                          onClick={handleJoinQueueClick}
+                          disabled={joining}
                         >
-                          {leaving ? <CircularProgress size={24} /> : 'Cancel Request'}
+                          {joining ? <CircularProgress size={24} /> : 'Join Queue'}
                         </Button>
-                      </>
-                    ) : (
-                      <Button
-                        variant="contained"
-                        color="primary"
-                        fullWidth
-                        onClick={handleJoinQueueClick}
-                        disabled={isInQueue || isPending || !activeQueue || joining}
-                      >
-                        {joining ? (
-                          <>
-                            <CircularProgress size={24} color="inherit" sx={{ mr: 1 }} />
-                            Joining...
-                          </>
-                        ) : isPending ? 'Request Pending' : 'Join Queue'}
-                        </Button>
-                      )
+                      )}
                     
                     
                     {!isAuthenticated && (
-                      <Button 
+                      <Button
                         variant="contained" 
                         color="primary" 
                         onClick={handleJoinQueueClick}
