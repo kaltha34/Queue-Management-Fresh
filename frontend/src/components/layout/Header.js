@@ -13,12 +13,15 @@ import {
   Tooltip,
   MenuItem,
   Link,
-  Divider
+  Divider,
+  useMediaQuery,
+  useTheme
 } from '@mui/material';
 import MenuIcon from '@mui/icons-material/Menu';
 import QueueIcon from '@mui/icons-material/Queue';
 import AuthContext from '../../context/AuthContext';
 import DarkModeToggle from '../DarkModeToggle';
+import ResponsiveDrawer from './ResponsiveDrawer';
 
 const Header = () => {
   const { isAuthenticated, user, logout, isMentorOrAdmin } = useContext(AuthContext);
@@ -71,10 +74,16 @@ const Header = () => {
         { title: 'Register', action: () => navigate('/register') }
       ];
 
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down('md'));
+
   return (
     <AppBar position="static">
       <Container maxWidth="xl">
         <Toolbar disableGutters>
+          {/* Responsive Drawer for mobile */}
+          {isMobile && <ResponsiveDrawer />}
+
           {/* Logo for larger screens */}
           <QueueIcon sx={{ display: { xs: 'none', md: 'flex' }, mr: 1 }} />
           <Typography
@@ -95,8 +104,8 @@ const Header = () => {
             QUEUE MASTER
           </Typography>
 
-          {/* Mobile menu */}
-          <Box sx={{ flexGrow: 1, display: { xs: 'flex', md: 'none' } }}>
+          {/* Mobile menu - only show if not using drawer */}
+          <Box sx={{ flexGrow: 1, display: isMobile ? 'none' : { xs: 'flex', md: 'none' } }}>
             <IconButton
               size="large"
               aria-label="account of current user"
