@@ -141,26 +141,36 @@ export const QueueProvider = ({ children }) => {
       console.log('Joining queue with project interest:', projectInterest);
       const res = await axiosInstance.post(`/api/queues/${queueId}/join`, { projectInterest });
       
-      // Update the queues list
-      setQueues(queues.map(q => 
-        q._id === queueId ? res.data : q
-      ));
-      
-      // Update current queue if it's the one being joined
-      if (currentQueue && currentQueue._id === queueId) {
-        setCurrentQueue(res.data);
+      if (res && res.data) {
+        // Update the queues list
+        setQueues(queues.map(q => 
+          q._id === queueId ? res.data : q
+        ));
+        
+        // Update current queue if it's the one being joined
+        if (currentQueue && currentQueue._id === queueId) {
+          setCurrentQueue(res.data);
+        }
+        
+        // Emit socket event
+        if (socket) {
+          socket.emit('joinQueue', { queueId });
+        }
+        
+        toast.success('Request submitted! Waiting for admin approval.');
+        return true;
+      } else {
+        throw new Error('Invalid response from server');
       }
-      
-      // Emit socket event
-      if (socket) {
-        socket.emit('joinQueue', { queueId });
-      }
-      
-      toast.success('Request submitted! Waiting for admin approval.');
-      return true;
     } catch (err) {
-      setError(err.response?.data.message || 'Failed to join queue');
-      toast.error(err.response?.data.message || 'Failed to join queue');
+      console.error('Error joining queue:', err);
+      if (err.response) {
+        setError(err.response.data?.message || 'Failed to join queue');
+        toast.error(err.response.data?.message || 'Failed to join queue');
+      } else {
+        setError(err.message || 'Failed to join queue. Check server connection.');
+        toast.error(err.message || 'Failed to join queue. Check server connection.');
+      }
       return false;
     }
   };
@@ -173,28 +183,39 @@ export const QueueProvider = ({ children }) => {
     }
 
     try {
+      console.log('Leaving queue:', queueId);
       const res = await axiosInstance.delete(`/api/queues/${queueId}/leave`);
       
-      // Update the queues list
-      setQueues(queues.map(q => 
-        q._id === queueId ? res.data : q
-      ));
-      
-      // Update current queue if it's the one being left
-      if (currentQueue && currentQueue._id === queueId) {
-        setCurrentQueue(res.data);
+      if (res && res.data) {
+        // Update the queues list
+        setQueues(queues.map(q => 
+          q._id === queueId ? res.data : q
+        ));
+        
+        // Update current queue if it's the one being left
+        if (currentQueue && currentQueue._id === queueId) {
+          setCurrentQueue(res.data);
+        }
+        
+        // Emit socket event
+        if (socket) {
+          socket.emit('leaveQueue', { queueId });
+        }
+        
+        toast.success('Successfully left the queue!');
+        return true;
+      } else {
+        throw new Error('Invalid response from server');
       }
-      
-      // Emit socket event
-      if (socket) {
-        socket.emit('leaveQueue', { queueId });
-      }
-      
-      toast.success('Successfully left the queue!');
-      return true;
     } catch (err) {
-      setError(err.response?.data.message || 'Failed to leave queue');
-      toast.error(err.response?.data.message || 'Failed to leave queue');
+      console.error('Error leaving queue:', err);
+      if (err.response) {
+        setError(err.response.data?.message || 'Failed to leave queue');
+        toast.error(err.response.data?.message || 'Failed to leave queue');
+      } else {
+        setError(err.message || 'Failed to leave queue. Check server connection.');
+        toast.error(err.message || 'Failed to leave queue. Check server connection.');
+      }
       return false;
     }
   };
