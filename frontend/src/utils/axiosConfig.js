@@ -17,10 +17,10 @@ const axiosInstance = axios.create({
   timeout: 15000 // 15 seconds timeout to allow for slower connections
 });
 
-// Function to check backend availability
+// Function to check if backend is available
 const checkBackendAvailability = async () => {
   try {
-    await axios.get(`${process.env.REACT_APP_API_URL || 'http://localhost:5001'}/api/health`, {
+    await axios.get(`${axiosInstance.defaults.baseURL}/api/health`, { 
       timeout: 5000 // Short timeout for health check
     });
     
@@ -41,12 +41,23 @@ const checkBackendAvailability = async () => {
     if (isBackendAvailable) {
       console.error('Backend server is not available:', error.message);
       isBackendAvailable = false;
+      
+      // Only show error toast if we haven't shown one recently
+      const now = Date.now();
+      if (!hasShownNetworkError || (now - lastErrorTime > ERROR_COOLDOWN)) {
+        toast.error('Cannot connect to server. Please check your connection.', {
+          toastId: 'backend-unavailable',
+          autoClose: 5000
+        });
+        hasShownNetworkError = true;
+        lastErrorTime = now;
+      }
     }
     return false;
   }
 };
 
-// Start periodic backend availability check
+// Start periodic backend availability check if we're in a browser environment
 if (typeof window !== 'undefined') {
   setInterval(checkBackendAvailability, BACKEND_CHECK_INTERVAL);
   // Initial check
@@ -81,7 +92,14 @@ axiosInstance.interceptors.request.use(
 axiosInstance.interceptors.response.use(
   (response) => {
     // Reset network error flag when we get a successful response
-    hasShownNetworkError = false;
+    if (!isBackendAvailable) {
+      isBackendAvailable = true;
+      hasShownNetworkError = false;
+      toast.success('Connection to server restored', {
+        toastId: 'backend-reconnected',
+        autoClose: 3000
+      });
+    }
     
     // Log successful responses in development mode
     if (process.env.NODE_ENV === 'development') {
@@ -91,19 +109,22 @@ axiosInstance.interceptors.response.use(
     return response;
   },
   (error) => {
+    // Log errors in development mode
+    if (process.env.NODE_ENV === 'development') {
+      console.error('API Error:', error.message, 'URL:', error.config?.url);
+    }
+
     // Handle network errors (no response from server)
-    if (!error.response) {
-      const currentTime = Date.now();
-      console.error('Network Error:', error.message, 'URL:', error.config?.url);
-      
-      // Update backend availability status
+    if (!error.response || error.code === 'ECONNABORTED' || error.message === 'Network Error') {
       isBackendAvailable = false;
+      
+      const currentTime = Date.now();
       
       // Only show network error toast once or after cooldown period
       if (!hasShownNetworkError || (currentTime - lastErrorTime > ERROR_COOLDOWN)) {
         // For initial page load, don't show toast for common API endpoints
-        const isInitialLoad = !document.referrer || 
-                             document.referrer.includes(window.location.origin);
+        const isInitialLoad = typeof document !== 'undefined' && 
+                             (!document.referrer || document.referrer.includes(window.location.origin));
         const isCommonEndpoint = error.config && 
                                (error.config.url.includes('/api/queues') || 
                                 error.config.url.includes('/api/teams') ||
@@ -111,14 +132,9 @@ axiosInstance.interceptors.response.use(
                                 error.config.url.includes('/api/health'));
         
         if (!(isInitialLoad && isCommonEndpoint)) {
-          // Trigger an immediate backend check to confirm if it's really down
-          checkBackendAvailability().then(isAvailable => {
-            if (!isAvailable) {
-              toast.error('Network error. Please check if the backend server is running.', {
-                toastId: 'network-error', // Prevent duplicate toasts
-                autoClose: 5000
-              });
-            }
+          toast.error('Cannot connect to server. Please check your connection.', {
+            toastId: 'network-error',
+            autoClose: 5000
           });
         }
         
@@ -126,21 +142,23 @@ axiosInstance.interceptors.response.use(
         lastErrorTime = currentTime;
       }
       
-      return Promise.reject(new Error('Network error. Please check if the backend server is running.'));
+      return Promise.reject(error);
     }
     
     // Handle API errors based on status code
     const { status, data } = error.response;
     const errorMessage = data?.message || 'An error occurred';
     
-    // Log detailed error information
-    console.error(`API Error ${status}:`, {
-      url: error.config?.url,
-      method: error.config?.method?.toUpperCase(),
-      status,
-      message: errorMessage,
-      data: data
-    });
+    // Log detailed error information in development mode
+    if (process.env.NODE_ENV === 'development') {
+      console.error(`API Error ${status}:`, {
+        url: error.config?.url,
+        method: error.config?.method?.toUpperCase(),
+        status,
+        message: errorMessage,
+        data: data
+      });
+    }
     
     // Handle specific status codes
     switch (status) {
@@ -151,13 +169,15 @@ axiosInstance.interceptors.response.use(
       case 401: // Unauthorized
         // Clear token and redirect to login
         localStorage.removeItem('token');
-        // Only redirect if not already on login or register page
-        const currentPath = window.location.pathname;
-        if (currentPath !== '/login' && currentPath !== '/register') {
-          toast.error('Session expired. Please log in again.', {
-            toastId: 'session-expired'
-          });
-          window.location.href = '/login';
+        // Only redirect if not already on login or register page and in browser environment
+        if (typeof window !== 'undefined') {
+          const currentPath = window.location.pathname;
+          if (currentPath !== '/login' && currentPath !== '/register') {
+            toast.error('Session expired. Please log in again.', {
+              toastId: 'session-expired'
+            });
+            window.location.href = '/login';
+          }
         }
         break;
         
@@ -182,7 +202,12 @@ axiosInstance.interceptors.response.use(
         break;
         
       default:
-        // Don't show generic error toasts here, let components handle specific error messages
+        // Only show error message if it exists in the response
+        if (data && data.message) {
+          toast.error(data.message, {
+            toastId: `error-${status}`
+          });
+        }
         break;
     }
     
