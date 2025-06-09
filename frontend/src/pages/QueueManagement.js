@@ -74,9 +74,17 @@ const QueueManagement = () => {
 
   useEffect(() => {
     const loadData = async () => {
-      await fetchTeams();
-      await fetchQueues();
-      console.log('Teams and queues loaded');
+      try {
+        setLoading(true);
+        await fetchTeams();
+        await fetchQueues();
+        console.log('Teams and queues loaded');
+      } catch (error) {
+        console.error('Error loading data:', error);
+        toast.error('Failed to load data. Please try again.');
+      } finally {
+        setLoading(false);
+      }
     };
     
     loadData();
@@ -84,11 +92,17 @@ const QueueManagement = () => {
   }, []);
   
   const handleRefresh = async () => {
-    setRefreshing(true);
-    await fetchTeams();
-    await fetchQueues();
-    setRefreshing(false);
-    toast.success('Data refreshed successfully');
+    try {
+      setRefreshing(true);
+      await fetchTeams();
+      await fetchQueues();
+      toast.success('Data refreshed successfully');
+    } catch (error) {
+      console.error('Error refreshing data:', error);
+      toast.error('Failed to refresh data. Please try again.');
+    } finally {
+      setRefreshing(false);
+    }
   };
 
   useEffect(() => {
@@ -98,13 +112,23 @@ const QueueManagement = () => {
       if (user.role === 'admin') {
         userTeams = teams;
       } else {
-        // Fix: Ensure we're comparing string IDs correctly
+        // Fix: Ensure we're comparing string IDs correctly and handle potential undefined values
         userTeams = teams.filter(team => {
-          // Convert IDs to strings for comparison
-          const mentorId = team.mentor._id.toString();
-          const userId = user._id.toString();
-          console.log('Comparing mentor ID:', mentorId, 'with user ID:', userId);
-          return mentorId === userId;
+          // Skip teams with missing mentor data
+          if (!team.mentor || !team.mentor._id) {
+            console.warn('Team missing mentor data:', team);
+            return false;
+          }
+          
+          try {
+            // Convert IDs to strings for comparison
+            const mentorId = team.mentor._id.toString();
+            const userId = user._id.toString();
+            return mentorId === userId;
+          } catch (error) {
+            console.error('Error comparing IDs:', error);
+            return false;
+          }
         });
       }
       
@@ -119,9 +143,21 @@ const QueueManagement = () => {
 
   useEffect(() => {
     if (queues.length > 0 && selectedTeam) {
-      // Find queues for the selected team
-      const teamQueues = queues.filter(queue => queue.team._id === selectedTeam._id);
-      setMentorQueues(teamQueues);
+      try {
+        // Find queues for the selected team - handle potential undefined values
+        const teamQueues = queues.filter(queue => {
+          // Skip queues with missing team data
+          if (!queue.team || !queue.team._id) {
+            console.warn('Queue missing team data:', queue);
+            return false;
+          }
+          return queue.team._id === selectedTeam._id;
+        });
+        setMentorQueues(teamQueues);
+      } catch (error) {
+        console.error('Error filtering queues:', error);
+        setMentorQueues([]);
+      }
     } else {
       setMentorQueues([]);
     }
@@ -153,14 +189,23 @@ const QueueManagement = () => {
       return;
     }
 
-    setProcessingAction(true);
-    const result = await createQueue(newQueueData);
-    setProcessingAction(false);
-    
-    if (result) {
-      setOpenCreateDialog(false);
-      // Refresh queues to show the newly created queue
-      fetchQueues();
+    try {
+      setProcessingAction(true);
+      const result = await createQueue(newQueueData);
+      
+      if (result) {
+        setOpenCreateDialog(false);
+        // Refresh queues to show the newly created queue
+        await fetchQueues();
+        toast.success('Queue created successfully');
+      } else {
+        toast.error('Failed to create queue. Please try again.');
+      }
+    } catch (error) {
+      console.error('Error creating queue:', error);
+      toast.error(`Failed to create queue: ${error.message || 'Unknown error'}`);
+    } finally {
+      setProcessingAction(false);
     }
   };
 
@@ -172,10 +217,21 @@ const QueueManagement = () => {
       confirmText: 'Next Student',
       confirmColor: 'primary',
       confirmAction: async () => {
-        setProcessingAction(true);
-        await nextInQueue(queueId);
-        setProcessingAction(false);
-        setConfirmDialog(prev => ({ ...prev, open: false }));
+        try {
+          setProcessingAction(true);
+          const result = await nextInQueue(queueId);
+          if (result) {
+            toast.success('Next student is now being served');
+          } else {
+            toast.warning('No more students in the queue');
+          }
+        } catch (error) {
+          console.error('Error serving next student:', error);
+          toast.error(`Failed to serve next student: ${error.message || 'Unknown error'}`);
+        } finally {
+          setProcessingAction(false);
+          setConfirmDialog(prev => ({ ...prev, open: false }));
+        }
       }
     });
   };
@@ -224,9 +280,25 @@ const QueueManagement = () => {
   };
 
   const handleQueueStatusChange = async (queueId, status) => {
-    setProcessingAction(true);
-    await updateQueueStatus(queueId, status);
-    setProcessingAction(false);
+    try {
+      setProcessingAction(true);
+      const result = await updateQueueStatus(queueId, status);
+      if (result) {
+        const statusMessages = {
+          active: 'Queue is now active',
+          paused: 'Queue has been paused',
+          closed: 'Queue has been closed'
+        };
+        toast.success(statusMessages[status] || `Queue status updated to ${status}`);
+      } else {
+        toast.error(`Failed to update queue status to ${status}`);
+      }
+    } catch (error) {
+      console.error(`Error updating queue status to ${status}:`, error);
+      toast.error(`Failed to update queue status: ${error.message || 'Unknown error'}`);
+    } finally {
+      setProcessingAction(false);
+    }
   };
 
   const getQueueStatusColor = (status) => {
@@ -309,96 +381,154 @@ const QueueManagement = () => {
                   onClick={handleCreateDialogOpen}
                   disabled={!selectedTeam}
                 >
-                  Create New Queue
-                </Button>
-              </Box>
+                  {mentorTeams.map(team => (
+                    <MenuItem key={team._id} value={team._id}>{team.name}</MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
               
-              {selectedTeam && (
-                <Box>
-                  <Typography variant="h6" gutterBottom>
-                    {selectedTeam.name} - {selectedTeam.category}
-                  </Typography>
-                  <Typography variant="body1" paragraph>
-                    {selectedTeam.description}
-                  </Typography>
-                  <Divider sx={{ my: 2 }} />
-                  <Grid container spacing={2}>
-                    <Grid item xs={12} sm={6}>
-                      <Typography variant="body1">
-                        <strong>Location:</strong> {selectedTeam.location}
-                      </Typography>
-                    </Grid>
-                    <Grid item xs={12} sm={6}>
-                      <Typography variant="body1">
-                        <strong>Meeting Days:</strong> {selectedTeam.meetingDays.join(', ')}
-                      </Typography>
-                    </Grid>
-                    <Grid item xs={12} sm={6}>
-                      <Typography variant="body1">
-                        <strong>Meeting Time:</strong> {selectedTeam.meetingTime.start} - {selectedTeam.meetingTime.end}
-                      </Typography>
-                    </Grid>
-                    <Grid item xs={12} sm={6}>
-                      <Typography variant="body1">
-                        <strong>Capacity:</strong> {selectedTeam.capacity} students
-                      </Typography>
-                    </Grid>
-                  </Grid>
-                </Box>
-              )}
-            </Paper>
+              <Button 
+                variant="contained" 
+                startIcon={<AddIcon />}
+                onClick={handleCreateDialogOpen}
+                disabled={!selectedTeam}
+              >
+                Create New Queue
+              </Button>
+            </Box>
             
             {selectedTeam && (
-              <>
-                <Typography variant="h5" component="h2" gutterBottom>
-                  Queues for {selectedTeam.name}
+              <Box>
+                <Typography variant="h6" gutterBottom>
+                  {selectedTeam.name} {selectedTeam.category ? `- ${selectedTeam.category}` : ''}
                 </Typography>
-                
-                {mentorQueues.length === 0 ? (
-                  <Alert severity="info">
-                    No queues found for this team. Create a new queue to get started.
-                  </Alert>
-                ) : (
-                  <Grid container spacing={3}>
-                    {mentorQueues.map(queue => {
-                      const waitingMembers = queue.members.filter(m => m.status === 'waiting');
-                      const pendingMembers = queue.members.filter(m => m.status === 'pending');
-                      const currentMember = queue.members.find(m => m.status === 'current');
-                      return (
-                        <Grid item xs={12} key={queue._id}>
-                          <Card>
-                            <CardContent>
-                              {/* Add Queue Statistics */}
-                              <QueueStatistics queue={queue} />
-                              
-                              {/* Add Search Feature */}
-                              <QueueSearch onSearch={(term) => setSearchTerm(term)} />
-                              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
-                                <Typography variant="h6">
-                                  Queue for {new Date(queue.date).toLocaleDateString()}
+                <Typography variant="body1" paragraph>
+                  {selectedTeam.description || 'No description available'}
+                </Typography>
+                <Divider sx={{ my: 2 }} />
+                <Grid container spacing={2}>
+                  <Grid item xs={12} sm={6}>
+                    <Typography variant="body1">
+                      <strong>Location:</strong> {selectedTeam.location}
+                    </Typography>
+                  </Grid>
+                  <Grid item xs={12} sm={6}>
+                    <Typography variant="body1">
+                      <strong>Meeting Days:</strong> {selectedTeam.meetingDays && selectedTeam.meetingDays.length > 0 ? selectedTeam.meetingDays.join(', ') : 'Not specified'}
+                    </Typography>
+                  </Grid>
+                  <Grid item xs={12} sm={6}>
+                    <Typography variant="body1">
+                      <strong>Meeting Time:</strong> {selectedTeam.meetingTime && selectedTeam.meetingTime.start && selectedTeam.meetingTime.end ? 
+                        `${selectedTeam.meetingTime.start} - ${selectedTeam.meetingTime.end}` : 'Not specified'}
+                    </Typography>
+                  </Grid>
+                  <Grid item xs={12} sm={6}>
+                    <Typography variant="body1">
+                      <strong>Capacity:</strong> {selectedTeam.capacity} students
+                    </Typography>
+                  </Grid>
+                </Grid>
+              </Box>
+            )}
+          </Paper>
+          
+          {selectedTeam && (
+            <>
+              <Typography variant="h5" component="h2" gutterBottom>
+                Queues for {selectedTeam.name}
+              </Typography>
+              
+              {mentorQueues.length === 0 ? (
+                <Alert severity="info">
+                  No queues found for this team. Create a new queue to get started.
+                </Alert>
+              ) : (
+                <Grid container spacing={3}>
+                  {mentorQueues.map(queue => {
+                    const waitingMembers = queue.members.filter(m => m.status === 'waiting');
+                    const pendingMembers = queue.members.filter(m => m.status === 'pending');
+                    const currentMember = queue.members.find(m => m.status === 'current');
+                    return (
+                      <Grid item xs={12} key={queue._id}>
+                        <Card>
+                          <CardContent>
+                            {/* Add Queue Statistics */}
+                            <QueueStatistics queue={queue} />
+                            
+                            {/* Add Search Feature */}
+                            <QueueSearch onSearch={(term) => setSearchTerm(term)} />
+                            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+                              <Typography variant="h6">
+                                Queue for {new Date(queue.date).toLocaleDateString()}
+                              </Typography>
+                              <Chip 
+                                label={(queue.status || 'unknown').toUpperCase()} 
+                                color={getQueueStatusColor(queue.status)} 
+                              />
+                            </Box>
+                            
+                            <Grid container spacing={2}>
+                              <Grid item xs={12} md={4}>
+                                <Typography variant="body1">
+                                  <strong>Created:</strong> {new Date(queue.createdAt).toLocaleString()}
                                 </Typography>
-                                <Chip 
-                                  label={queue.status.toUpperCase()} 
-                                  color={getQueueStatusColor(queue.status)} 
-                                />
-                              </Box>
-                              
-                              <Grid container spacing={2}>
-                                <Grid item xs={12} md={4}>
-                                  <Typography variant="body1">
-                                    <strong>Created:</strong> {new Date(queue.createdAt).toLocaleString()}
-                                  </Typography>
-                                  <Typography variant="body1">
-                                    <strong>Est. Time Per Person:</strong> {queue.estimatedTimePerPerson} min
-                                  </Typography>
-                                  <Typography variant="body1">
-                                    <strong>Waiting:</strong> {waitingMembers.length} people
-                                  </Typography>
-                                  <Typography variant="body1">
-                                    <strong>Pending Requests:</strong> {pendingMembers.length} people
-                                  </Typography>
+                                <Typography variant="body1">
+                                  <strong>Est. Time Per Person:</strong> {queue.estimatedTimePerPerson} min
+                                </Typography>
+                                <Typography variant="body1">
+                                  <strong>Location:</strong> {selectedTeam.location || 'Not specified'}
+                                </Typography>
+                                <Typography variant="body1">
+                                  <strong>Pending Requests:</strong> {pendingMembers.length} people
+                                </Typography>
+                                
+                                <Box sx={{ mt: 2, display: 'flex', gap: 1 }}>
+                                  {queue.status === 'active' ? (
+                                    <Button 
+                                      variant="outlined" 
+                                      color="warning" 
+                                      startIcon={<PauseIcon />}
+                                      onClick={() => handleQueueStatusChange(queue._id, 'paused')}
+                                      disabled={processingAction}
+                                    >
+                                      Pause
+                                    </Button>
+                                  ) : queue.status === 'paused' ? (
+                                    <Button 
+                                      variant="outlined" 
+                                      color="success" 
+                                      startIcon={<PlayArrowIcon />}
+                                      onClick={() => handleQueueStatusChange(queue._id, 'active')}
+                                      disabled={processingAction}
+                                    >
+                                      Resume
+                                    </Button>
+                                  ) : null}
                                   
-                                  <Box sx={{ mt: 2, display: 'flex', gap: 1 }}>
+                                  {queue.status !== 'closed' && (
+                                    <Button 
+                                      variant="outlined" 
+                                      color="error" 
+                                      startIcon={<StopIcon />}
+                                      onClick={() => handleQueueStatusChange(queue._id, 'closed')}
+                                      disabled={processingAction}
+                                    >
+                                      Close
+                                    </Button>
+                                  )}
+                                </Box>
+                              </Grid>
+                              
+                              <Grid item xs={12} md={8}>
+                                {currentMember && (
+                                  <Box sx={{ mb: 2 }}>
+                                    <Alert severity="success">
+                                      <AlertTitle>Current Student</AlertTitle>
+                                      <Typography variant="body1">
+                                        <strong>{currentMember.user.name}</strong> (Queue #{currentMember.queueNumber})
+                                      </Typography>
+                                    </Alert>
                                     {queue.status === 'active' ? (
                                       <Button 
                                         variant="outlined" 
