@@ -27,16 +27,20 @@ const QueueTimer = ({ position, averageTimePerStudent, startTime }) => {
 
     // Update timer every minute
     const timer = setInterval(() => {
-      setElapsedTime(prev => prev + 1);
-      
-      // Recalculate progress
-      const totalTime = elapsedTime + 1 + remainingTime;
-      const progressPercent = totalTime > 0 ? ((elapsedTime + 1) / totalTime) * 100 : 0;
-      setProgress(Math.min(progressPercent, 100));
+      setElapsedTime(prev => {
+        const newElapsed = prev + 1;
+        
+        // Recalculate progress using the updated elapsed time
+        const totalTime = newElapsed + remainingTime;
+        const progressPercent = totalTime > 0 ? (newElapsed / totalTime) * 100 : 0;
+        setProgress(Math.min(progressPercent, 100));
+        
+        return newElapsed;
+      });
     }, 60000); // Update every minute
 
     return () => clearInterval(timer);
-  }, [position, averageTimePerStudent, startTime, elapsedTime, remainingTime]);
+  }, [position, averageTimePerStudent, startTime, remainingTime]);
 
   // Format time display
   const formatTime = (minutes) => {
