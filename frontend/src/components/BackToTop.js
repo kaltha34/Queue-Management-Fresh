@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Fab, Zoom, useScrollTrigger } from '@mui/material';
+import { Fab, Zoom } from '@mui/material';
 import KeyboardArrowUpIcon from '@mui/icons-material/KeyboardArrowUp';
 
 const BackToTop = () => {
