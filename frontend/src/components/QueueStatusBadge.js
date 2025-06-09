@@ -5,9 +5,12 @@ import PauseCircleIcon from '@mui/icons-material/PauseCircle';
 import CancelIcon from '@mui/icons-material/Cancel';
 import HourglassEmptyIcon from '@mui/icons-material/HourglassEmpty';
 
-const QueueStatusBadge = ({ status, size = 'small' }) => {
+const QueueStatusBadge = ({ status = 'unknown', size = 'small' }) => {
   const getStatusConfig = () => {
-    switch (status?.toLowerCase()) {
+    // Handle null/undefined status values gracefully
+    const normalizedStatus = status ? status.toLowerCase() : 'unknown';
+    
+    switch (normalizedStatus) {
       case 'active':
         return {
           label: 'Active',
