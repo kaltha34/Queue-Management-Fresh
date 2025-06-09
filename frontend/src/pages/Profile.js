@@ -114,7 +114,7 @@ const Profile = () => {
         }
         
         // Make API call to update profile
-        const res = await axios.put('/api/auth/user', updateData, {
+        await axios.put('/api/auth/user', updateData, {
           headers: {
             'x-auth-token': token
           }
