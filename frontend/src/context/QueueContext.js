@@ -1,4 +1,4 @@
-﻿import React, { createContext, useState, useEffect, useContext } from 'react';
+import React, { createContext, useState, useEffect, useContext } from 'react';
 import { toast } from 'react-toastify';
 import io from 'socket.io-client';
 import AuthContext from './AuthContext';
@@ -223,28 +223,39 @@ export const QueueProvider = ({ children }) => {
   // Approve a queue request (only for team admin)
   const approveRequest = async (queueId, userId) => {
     try {
+      console.log('Approving request for user:', userId, 'in queue:', queueId);
       const res = await axiosInstance.put(`/api/queues/${queueId}/approve/${userId}`);
       
-      // Update the queues list
-      setQueues(queues.map(q => 
-        q._id === queueId ? res.data : q
-      ));
-      
-      // Update current queue if it's the one being updated
-      if (currentQueue && currentQueue._id === queueId) {
-        setCurrentQueue(res.data);
+      if (res && res.data) {
+        // Update the queues list
+        setQueues(queues.map(q => 
+          q._id === queueId ? res.data : q
+        ));
+        
+        // Update current queue if it's the one being updated
+        if (currentQueue && currentQueue._id === queueId) {
+          setCurrentQueue(res.data);
+        }
+        
+        // Emit socket event
+        if (socket) {
+          socket.emit('queueUpdate', { queueId });
+        }
+        
+        toast.success('Request approved!');
+        return true;
+      } else {
+        throw new Error('Invalid response from server');
       }
-      
-      // Emit socket event
-      if (socket) {
-        socket.emit('queueUpdate', { queueId });
-      }
-      
-      toast.success('Request approved!');
-      return true;
     } catch (err) {
-      setError(err.response?.data.message || 'Failed to approve request');
-      toast.error(err.response?.data.message || 'Failed to approve request');
+      console.error('Error approving request:', err);
+      if (err.response) {
+        setError(err.response.data?.message || 'Failed to approve request');
+        toast.error(err.response.data?.message || 'Failed to approve request');
+      } else {
+        setError(err.message || 'Failed to approve request. Check server connection.');
+        toast.error(err.message || 'Failed to approve request. Check server connection.');
+      }
       return false;
     }
   };
@@ -252,23 +263,39 @@ export const QueueProvider = ({ children }) => {
   // Reject a queue request (only for team admin)
   const rejectRequest = async (queueId, userId) => {
     try {
+      console.log('Rejecting request for user:', userId, 'in queue:', queueId);
       const res = await axiosInstance.post(`/api/queues/${queueId}/reject/${userId}`);
       
-      // Update the queues list
-      setQueues(queues.map(q => 
-        q._id === queueId ? res.data : q
-      ));
-      
-      // Update current queue if it's the one being modified
-      if (currentQueue && currentQueue._id === queueId) {
-        setCurrentQueue(res.data);
+      if (res && res.data) {
+        // Update the queues list
+        setQueues(queues.map(q => 
+          q._id === queueId ? res.data : q
+        ));
+        
+        // Update current queue if it's the one being modified
+        if (currentQueue && currentQueue._id === queueId) {
+          setCurrentQueue(res.data);
+        }
+        
+        // Emit socket event if available
+        if (socket) {
+          socket.emit('queueUpdate', { queueId });
+        }
+        
+        toast.success('Request rejected.');
+        return res.data;
+      } else {
+        throw new Error('Invalid response from server');
       }
-      
-      toast.success('Request rejected.');
-      return res.data;
     } catch (err) {
-      setError(err.response?.data.message || 'Failed to reject request');
-      toast.error(err.response?.data.message || 'Failed to reject request');
+      console.error('Error rejecting request:', err);
+      if (err.response) {
+        setError(err.response.data?.message || 'Failed to reject request');
+        toast.error(err.response.data?.message || 'Failed to reject request');
+      } else {
+        setError(err.message || 'Failed to reject request. Check server connection.');
+        toast.error(err.message || 'Failed to reject request. Check server connection.');
+      }
       return null;
     }
   };
