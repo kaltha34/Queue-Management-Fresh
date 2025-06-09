@@ -4,7 +4,9 @@ import { toast } from 'react-toastify';
 // Track backend connectivity to prevent repeated error notifications
 let hasShownNetworkError = false;
 let lastErrorTime = 0;
+let isBackendAvailable = true;
 const ERROR_COOLDOWN = 30000; // 30 seconds between network error notifications
+const BACKEND_CHECK_INTERVAL = 10000; // 10 seconds between backend availability checks
 
 // Create a base axios instance with default configuration
 const axiosInstance = axios.create({
@@ -14,6 +16,42 @@ const axiosInstance = axios.create({
   },
   timeout: 15000 // 15 seconds timeout to allow for slower connections
 });
+
+// Function to check backend availability
+const checkBackendAvailability = async () => {
+  try {
+    await axios.get(`${process.env.REACT_APP_API_URL || 'http://localhost:5001'}/api/health`, {
+      timeout: 5000 // Short timeout for health check
+    });
+    
+    if (!isBackendAvailable) {
+      console.log('Backend server is now available');
+      isBackendAvailable = true;
+      // Show reconnected message if we previously showed a disconnection
+      if (hasShownNetworkError) {
+        toast.success('Connection to server restored', {
+          toastId: 'backend-reconnected',
+          autoClose: 3000
+        });
+        hasShownNetworkError = false;
+      }
+    }
+    return true;
+  } catch (error) {
+    if (isBackendAvailable) {
+      console.error('Backend server is not available:', error.message);
+      isBackendAvailable = false;
+    }
+    return false;
+  }
+};
+
+// Start periodic backend availability check
+if (typeof window !== 'undefined') {
+  setInterval(checkBackendAvailability, BACKEND_CHECK_INTERVAL);
+  // Initial check
+  checkBackendAvailability();
+}
 
 // Add a request interceptor to add auth token to every request
 axiosInstance.interceptors.request.use(
@@ -58,6 +96,9 @@ axiosInstance.interceptors.response.use(
       const currentTime = Date.now();
       console.error('Network Error:', error.message, 'URL:', error.config?.url);
       
+      // Update backend availability status
+      isBackendAvailable = false;
+      
       // Only show network error toast once or after cooldown period
       if (!hasShownNetworkError || (currentTime - lastErrorTime > ERROR_COOLDOWN)) {
         // For initial page load, don't show toast for common API endpoints
@@ -66,12 +107,18 @@ axiosInstance.interceptors.response.use(
         const isCommonEndpoint = error.config && 
                                (error.config.url.includes('/api/queues') || 
                                 error.config.url.includes('/api/teams') ||
-                                error.config.url.includes('/api/auth/user'));
+                                error.config.url.includes('/api/auth/user') ||
+                                error.config.url.includes('/api/health'));
         
         if (!(isInitialLoad && isCommonEndpoint)) {
-          toast.error('Network error. Please check if the backend server is running.', {
-            toastId: 'network-error', // Prevent duplicate toasts
-            autoClose: 5000
+          // Trigger an immediate backend check to confirm if it's really down
+          checkBackendAvailability().then(isAvailable => {
+            if (!isAvailable) {
+              toast.error('Network error. Please check if the backend server is running.', {
+                toastId: 'network-error', // Prevent duplicate toasts
+                autoClose: 5000
+              });
+            }
           });
         }
         

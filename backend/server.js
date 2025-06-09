@@ -31,6 +31,11 @@ app.use('/api/auth', authRoutes);
 app.use('/api/queues', queueRoutes);
 app.use('/api/teams', teamRoutes);
 
+// Health check endpoint
+app.get('/api/health', (req, res) => {
+  res.status(200).json({ status: 'ok', message: 'Server is running' });
+});
+
 // Socket.io connection
 io.on('connection', (socket) => {
   console.log('New client connected');
