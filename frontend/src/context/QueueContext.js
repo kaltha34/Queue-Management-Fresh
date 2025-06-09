@@ -102,13 +102,28 @@ export const QueueProvider = ({ children }) => {
   const fetchQueueById = async (queueId) => {
     setLoading(true);
     try {
+      console.log(`Fetching queue ${queueId}...`);
       const res = await axiosInstance.get(`/api/queues/${queueId}`);
-      setCurrentQueue(res.data);
-      setError(null);
-      return res.data;
+      if (res && res.data) {
+        setCurrentQueue(res.data);
+        setError(null);
+        return res.data;
+      } else {
+        throw new Error('Invalid response from server');
+      }
     } catch (err) {
-      setError(err.response?.data.message || 'Failed to fetch queue');
-      toast.error(err.response?.data.message || 'Failed to fetch queue');
+      console.error(`Error fetching queue ${queueId}:`, err);
+      // Only show toast for specific errors, not connection errors
+      if (err.response) {
+        setError(err.response.data?.message || 'Failed to fetch queue');
+        // Only show toast for specific API errors, not general connection errors
+        if (err.response.status !== 404 && err.response.status !== 500) {
+          toast.error(err.response.data?.message || 'Failed to fetch queue');
+        }
+      } else {
+        setError('Cannot connect to server. Please check if the backend is running.');
+        // Don't show toast for connection errors to avoid spamming the user
+      }
       return null;
     } finally {
       setLoading(false);
