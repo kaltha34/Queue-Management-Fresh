@@ -24,8 +24,7 @@ import {
   DialogActions,
   DialogContent,
   DialogContentText,
-  DialogTitle,
-  Tooltip
+  DialogTitle
 } from '@mui/material';
 import { toast } from 'react-toastify';
 import AccessTimeIcon from '@mui/icons-material/AccessTime';
