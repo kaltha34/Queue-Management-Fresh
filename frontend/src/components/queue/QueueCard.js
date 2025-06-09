@@ -1,4 +1,4 @@
-import React, { useContext } from 'react';
+import React, { useContext, useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   Card,
@@ -9,24 +9,43 @@ import {
   Chip,
   Divider,
   CircularProgress,
-  LinearProgress
+  LinearProgress,
+  Alert,
+  Collapse
 } from '@mui/material';
 import AccessTimeIcon from '@mui/icons-material/AccessTime';
 import PeopleIcon from '@mui/icons-material/People';
+import ErrorOutlineIcon from '@mui/icons-material/ErrorOutline';
 import AuthContext from '../../context/AuthContext';
 import QueueContext from '../../context/QueueContext';
+import QueueStatusBadge from '../QueueStatusBadge';
 
 const QueueCard = ({ queue, team, compact = false }) => {
   const navigate = useNavigate();
   const { isAuthenticated, user } = useContext(AuthContext);
   const { joinQueue, leaveQueue, getUserQueuePosition } = useContext(QueueContext);
   
-  const [joining, setJoining] = React.useState(false);
-  const [leaving, setLeaving] = React.useState(false);
+  const [joining, setJoining] = useState(false);
+  const [leaving, setLeaving] = useState(false);
+  const [error, setError] = useState(null);
+  const [showError, setShowError] = useState(false);
   
-  const waitingCount = queue.members.filter(m => m.status === 'waiting').length;
-  const userPosition = isAuthenticated && user ? getUserQueuePosition(queue, user._id) : null;
+  // Safely handle queue data that might be null or undefined
+  const waitingCount = queue?.members?.filter(m => m.status === 'waiting')?.length || 0;
+  const userPosition = isAuthenticated && user && queue ? getUserQueuePosition(queue, user._id) : null;
   const isInQueue = userPosition !== null;
+  
+  // Clear error after 5 seconds
+  useEffect(() => {
+    if (error) {
+      setShowError(true);
+      const timer = setTimeout(() => {
+        setShowError(false);
+        setTimeout(() => setError(null), 300); // Clear error after animation
+      }, 5000);
+      return () => clearTimeout(timer);
+    }
+  }, [error]);
   
   const handleJoinQueue = async (e) => {
     e.stopPropagation();
@@ -35,16 +54,36 @@ const QueueCard = ({ queue, team, compact = false }) => {
       return;
     }
     
-    setJoining(true);
-    await joinQueue(queue._id);
-    setJoining(false);
+    try {
+      setJoining(true);
+      setError(null);
+      const success = await joinQueue(queue._id);
+      if (!success) {
+        setError('Failed to join queue. Please try again.');
+      }
+    } catch (err) {
+      setError('Error joining queue: ' + (err.message || 'Unknown error'));
+      console.error('Join queue error:', err);
+    } finally {
+      setJoining(false);
+    }
   };
   
   const handleLeaveQueue = async (e) => {
     e.stopPropagation();
-    setLeaving(true);
-    await leaveQueue(queue._id);
-    setLeaving(false);
+    try {
+      setLeaving(true);
+      setError(null);
+      const success = await leaveQueue(queue._id);
+      if (!success) {
+        setError('Failed to leave queue. Please try again.');
+      }
+    } catch (err) {
+      setError('Error leaving queue: ' + (err.message || 'Unknown error'));
+      console.error('Leave queue error:', err);
+    } finally {
+      setLeaving(false);
+    }
   };
   
   const handleCardClick = () => {
@@ -64,8 +103,8 @@ const QueueCard = ({ queue, team, compact = false }) => {
     }
   };
   
-  // Calculate wait time
-  const estimatedWaitTime = waitingCount * queue.estimatedTimePerPerson;
+  // Calculate wait time - handle potential undefined values
+  const estimatedWaitTime = waitingCount * (queue?.estimatedTimePerPerson || 0);
   
   // Calculate progress for current user in queue
   const calculateProgress = () => {
@@ -95,18 +134,16 @@ const QueueCard = ({ queue, team, compact = false }) => {
           <Typography variant="h6" component="h3">
             {team.name}
           </Typography>
-          <Chip 
-            label={queue.status.toUpperCase()} 
-            size="small"
-            color={getStatusColor(queue.status)}
-          />
+          <QueueStatusBadge status={queue?.status} size="small" />
         </Box>
         
         {!compact && (
           <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-            {team.description.length > 100 
-              ? `${team.description.substring(0, 100)}...` 
-              : team.description}
+            {team?.description ? 
+              (team.description.length > 100 
+                ? `${team.description.substring(0, 100)}...` 
+                : team.description)
+              : 'No description available'}
           </Typography>
         )}
         
@@ -140,6 +177,19 @@ const QueueCard = ({ queue, team, compact = false }) => {
           </Box>
         )}
         
+        {/* Error message */}
+        <Collapse in={showError}>
+          {error && (
+            <Alert 
+              severity="error" 
+              icon={<ErrorOutlineIcon fontSize="inherit" />}
+              sx={{ mb: 2, fontSize: '0.8rem' }}
+            >
+              {error}
+            </Alert>
+          )}
+        </Collapse>
+        
         <Box sx={{ mt: 2 }}>
           {isAuthenticated && (
             isInQueue ? (
@@ -160,7 +210,7 @@ const QueueCard = ({ queue, team, compact = false }) => {
                 size="small"
                 fullWidth
                 onClick={handleJoinQueue}
-                disabled={joining || queue.status !== 'active'}
+                disabled={joining || queue?.status !== 'active'}
               >
                 {joining ? <CircularProgress size={20} /> : 'Join Queue'}
               </Button>
